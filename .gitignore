@@ -1,0 +1,66 @@
+# ── Python ────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# ── Virtual environments ───────────────────────────────────────────────
+venv/
+venv311/
+.venv/
+env/
+ENV/
+
+# ── Jupyter ───────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+
+# ── Trained model weights (large binary files) ─────────────────────────
+backend/app/storage/models/*.h5
+backend/app/storage/models/*.keras
+backend/app/storage/models/*.pt
+backend/app/storage/models/*.pth
+
+# ── Processed numpy data (large) ──────────────────────────────────────
+backend/data/processed/*.npy
+backend/data/labels/*.npy
+
+# ── User uploads & generated outputs (runtime files) ──────────────────
+backend/app/storage/uploads/*
+backend/app/storage/outputs/*
+!backend/app/storage/uploads/.gitkeep
+!backend/app/storage/outputs/.gitkeep
+
+# ── Raw datasets (too large for git) ──────────────────────────────────
+Datasets/
+
+# ── Node / Frontend ────────────────────────────────────────────────────
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── Environment variables ─────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── IDE & OS ──────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Logs ──────────────────────────────────────────────────────────────
+*.log
+logs/
