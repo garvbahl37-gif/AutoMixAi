@@ -3,6 +3,13 @@ AutoMixAI – Model Inference
 
 Loads a trained Keras model and converts frame-level beat-probability
 predictions into beat timestamps.
+
+v2 changes:
+  - Auto-loads ``feature_scaler.pkl`` (sklearn StandardScaler) if present
+    beside the model file.  Required when the v2 notebook was used for
+    training; silently skipped for the v1 model.
+  - Model input dimensionality is inferred from the loaded model so no
+    manual config change is needed when swapping v1 ↔ v2.
 """
 
 from pathlib import Path
@@ -17,6 +24,8 @@ from app.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
+
+# ── Model loading ─────────────────────────────────────────────────────────────
 
 @lru_cache(maxsize=1)
 def load_model(path: str | Path | None = None) -> keras.Model:
@@ -38,17 +47,58 @@ def load_model(path: str | Path | None = None) -> keras.Model:
     if not model_path.exists():
         raise FileNotFoundError(
             f"Trained model not found at {model_path}. "
-            "Run `python -m app.model.train` first."
+            "Run the Kaggle notebook and place beat_detector.h5 in "
+            "backend/app/storage/models/."
         )
 
     logger.info("Loading trained model from %s", model_path)
     model = keras.models.load_model(str(model_path))
+    input_dim = model.input_shape[-1]
+    logger.info("Model loaded — input_dim=%d", input_dim)
     return model
 
+
+# ── Feature scaler (v2 only) ──────────────────────────────────────────────────
+
+@lru_cache(maxsize=1)
+def load_scaler(path: str | Path | None = None):
+    """
+    Load the sklearn StandardScaler saved by the v2 training notebook.
+
+    Returns ``None`` silently if the scaler file is not found (v1 model
+    compatibility).
+
+    Args:
+        path: Path to ``feature_scaler.pkl``.  Defaults to
+              ``settings.scaler_path``.
+    """
+    scaler_path = Path(path or settings.scaler_path)
+
+    if not scaler_path.exists():
+        logger.info(
+            "No feature scaler found at %s — assuming raw (unscaled) features.",
+            scaler_path,
+        )
+        return None
+
+    try:
+        import joblib
+        scaler = joblib.load(str(scaler_path))
+        logger.info("Feature scaler loaded from %s", scaler_path)
+        return scaler
+    except Exception as exc:
+        logger.warning("Could not load scaler (%s) — skipping scaling.", exc)
+        return None
+
+
+# ── Inference helpers ─────────────────────────────────────────────────────────
 
 def predict_beats(model: keras.Model, features: np.ndarray) -> np.ndarray:
     """
     Run the ANN forward pass to get per-frame beat probabilities.
+
+    Automatically applies the v2 StandardScaler when ``feature_scaler.pkl``
+    is present in the models directory.
 
     Args:
         model:    Loaded Keras model.
@@ -57,12 +107,23 @@ def predict_beats(model: keras.Model, features: np.ndarray) -> np.ndarray:
     Returns:
         1-D array of probabilities in ``[0, 1]``.
     """
+    scaler = load_scaler()
+    if scaler is not None:
+        features = scaler.transform(features)
+
+    # Guard: model expects a specific input dimension
+    expected_dim = model.input_shape[-1]
+    if features.shape[1] != expected_dim:
+        raise ValueError(
+            f"Feature dimension mismatch: model expects {expected_dim} dims "
+            f"but got {features.shape[1]}. Make sure the feature extractor "
+            "matches the training notebook (v1=16, v2=43)."
+        )
+
     predictions = model.predict(features, verbose=0).flatten()
     logger.debug(
-        "Predictions — min=%.4f, max=%.4f, mean=%.4f",
-        predictions.min(),
-        predictions.max(),
-        predictions.mean(),
+        "Predictions — min=%.4f  max=%.4f  mean=%.4f",
+        predictions.min(), predictions.max(), predictions.mean(),
     )
     return predictions
 
@@ -89,11 +150,12 @@ def predictions_to_timestamps(
     Returns:
         Sorted list of beat times in seconds.
     """
-    sr = sr or settings.sample_rate
-    hop_length = hop_length or settings.hop_length
-    threshold = threshold if threshold is not None else settings.beat_threshold
+    from app.services.feature_extractor import INFERENCE_HOP
 
-    # Threshold the predictions
+    sr         = sr or settings.sample_rate
+    hop_length = hop_length or INFERENCE_HOP   # use inference hop, not training hop
+    threshold  = threshold if threshold is not None else settings.beat_threshold
+
     beat_frames = np.where(predictions >= threshold)[0]
 
     if len(beat_frames) == 0:

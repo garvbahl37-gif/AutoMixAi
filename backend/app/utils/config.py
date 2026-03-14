@@ -38,8 +38,9 @@ class Settings(BaseSettings):
     # ── ANN model parameters ─────────────────────────────────────────
     beat_threshold: float = 0.5
     model_filename: str = "beat_detector.h5"
-    training_epochs: int = 50
-    training_batch_size: int = 32
+    scaler_filename: str = "feature_scaler.pkl"   # optional v2 scaler
+    training_epochs: int = 80
+    training_batch_size: int = 512
 
     # ── Mixing defaults ──────────────────────────────────────────────
     default_crossfade_duration: float = 5.0   # seconds
@@ -53,6 +54,11 @@ class Settings(BaseSettings):
     def model_path(self) -> Path:
         """Full path to the trained ANN model file."""
         return self.model_dir / self.model_filename
+
+    @property
+    def scaler_path(self) -> Path:
+        """Full path to the optional sklearn feature scaler (.pkl)."""
+        return self.model_dir / self.scaler_filename
 
     class Config:
         env_prefix = "AUTOMIX_"
