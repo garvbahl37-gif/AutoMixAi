@@ -1,4 +1,4 @@
-const API_BASE = "http://localhost:8000";
+const API_BASE = "http://localhost:8002";
 
 export const api = {
   /**
@@ -55,6 +55,25 @@ export const api = {
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       throw new Error(err.detail || "Mixing failed");
+    }
+    return res.json();
+  },
+
+  /**
+   * Generate a synthesised drum beat from a text prompt.
+   * @param {string} prompt
+   * @param {number} bars
+   * @returns {Promise<{output_file_id, genre, bpm, bars, complexity, description, duration, pattern}>}
+   */
+  async generateBeat(prompt, bars = 4) {
+    const res = await fetch(`${API_BASE}/generate`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ prompt, bars }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || "Beat generation failed");
     }
     return res.json();
   },

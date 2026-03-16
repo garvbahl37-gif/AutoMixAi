@@ -86,9 +86,21 @@ def get_audio_info(path: str) -> dict:
     Returns:
         Dictionary with keys ``duration``, ``sample_rate``, ``channels``.
     """
-    info = sf.info(path)
-    return {
-        "duration": info.duration,
-        "sample_rate": info.samplerate,
-        "channels": info.channels,
-    }
+    try:
+        # Fast path: soundfile handles WAV/FLAC natively
+        info = sf.info(path)
+        return {
+            "duration": info.duration,
+            "sample_rate": info.samplerate,
+            "channels": info.channels,
+        }
+    except Exception:
+        # Fallback for MP3/AAC/M4A/OGG (soundfile doesn't support these)
+        y, sr = librosa.load(path, sr=None, mono=False)
+        channels = 1 if y.ndim == 1 else y.shape[0]
+        duration = (len(y) if y.ndim == 1 else y.shape[1]) / sr
+        return {
+            "duration": float(duration),
+            "sample_rate": int(sr),
+            "channels": int(channels),
+        }

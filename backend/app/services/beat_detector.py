@@ -28,7 +28,7 @@ def detect_beats(
     produce timestamps.
 
     Falls back to :func:`detect_beats_librosa` when the model file is
-    not found.
+    not found or TensorFlow is not installed.
 
     Args:
         y:          Audio time-series (mono, normalized).
@@ -38,7 +38,13 @@ def detect_beats(
     Returns:
         Sorted list of beat timestamps (seconds).
     """
-    from app.model.inference import load_model, predict_beats, predictions_to_timestamps
+    try:
+        from app.model.inference import load_model, predict_beats, predictions_to_timestamps
+    except ImportError as exc:
+        logger.warning(
+            "TensorFlow not available (%s) — falling back to librosa beat tracker", exc
+        )
+        return detect_beats_librosa(y, sr)
 
     model_file = model_path or str(settings.model_path)
 
@@ -51,7 +57,13 @@ def detect_beats(
         return detect_beats_librosa(y, sr)
 
     features = extract_features(y, sr)
-    predictions = predict_beats(model, features)
+    try:
+        predictions = predict_beats(model, features)
+    except ValueError as exc:
+        logger.warning(
+            "Model/feature mismatch (%s) — falling back to librosa beat tracker", exc
+        )
+        return detect_beats_librosa(y, sr)
     beat_times = predictions_to_timestamps(predictions, sr=sr)
 
     logger.info("ANN beat detection returned %d beats", len(beat_times))

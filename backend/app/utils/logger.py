@@ -34,10 +34,19 @@ def get_logger(name: str) -> logging.Logger:
         handler.setLevel(logging.DEBUG)
 
         formatter = logging.Formatter(
-            fmt="%(asctime)s │ %(levelname)-8s │ %(name)s │ %(message)s",
+            fmt="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
             datefmt="%Y-%m-%d %H:%M:%S",
         )
         handler.setFormatter(formatter)
+        # Ensure the stream can handle any characters on Windows (cp1252 terminals)
+        if hasattr(handler.stream, "reconfigure"):
+            try:
+                handler.stream.reconfigure(encoding="utf-8", errors="replace")
+            except Exception:
+                pass
         logger.addHandler(handler)
+        # Don't propagate to root — prevents uvicorn's RichHandler from
+        # re-emitting our messages with Unicode box chars (breaks cp1252)
+        logger.propagate = False
 
     return logger

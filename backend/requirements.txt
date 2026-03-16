@@ -20,3 +20,6 @@ joblib>=1.3.0
 # Data Validation
 pydantic>=2.5.0
 pydantic-settings>=2.1.0
+
+# Dataset Processing
+pyyaml>=6.0.0

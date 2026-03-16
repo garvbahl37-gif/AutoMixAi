@@ -39,6 +39,9 @@ class Settings(BaseSettings):
     beat_threshold: float = 0.5
     model_filename: str = "beat_detector.h5"
     scaler_filename: str = "feature_scaler.pkl"   # optional v2 scaler
+    # Genre classifier model files
+    genre_model_filename:  str = "genre_classifier.h5"
+    genre_scaler_filename: str = "genre_scaler.pkl"
     training_epochs: int = 80
     training_batch_size: int = 512
 
@@ -47,7 +50,7 @@ class Settings(BaseSettings):
 
     # ── Server ────────────────────────────────────────────────────────
     host: str = "0.0.0.0"
-    port: int = 8000
+    port: int = 8002
     debug: bool = True
 
     @property
@@ -59,6 +62,16 @@ class Settings(BaseSettings):
     def scaler_path(self) -> Path:
         """Full path to the optional sklearn feature scaler (.pkl)."""
         return self.model_dir / self.scaler_filename
+
+    @property
+    def genre_model_path(self) -> Path:
+        """Full path to the trained genre classifier model."""
+        return self.model_dir / self.genre_model_filename
+
+    @property
+    def genre_scaler_path(self) -> Path:
+        """Full path to the genre feature scaler (.pkl)."""
+        return self.model_dir / self.genre_scaler_filename
 
     class Config:
         env_prefix = "AUTOMIX_"

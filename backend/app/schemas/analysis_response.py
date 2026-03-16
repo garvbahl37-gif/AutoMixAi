@@ -19,8 +19,15 @@ class UploadResponse(BaseModel):
     )
 
 
+class GenreTopResult(BaseModel):
+    """One entry in the top-3 genre ranking."""
+
+    genre: str = Field(..., description="Genre label.")
+    confidence: float = Field(..., description="Confidence score (0–1).")
+
+
 class AnalysisResponse(BaseModel):
-    """Response returned after audio analysis (BPM + beat detection)."""
+    """Response returned after audio analysis (BPM + beat detection + genre)."""
 
     file_id: str = Field(..., description="Identifier of the analyzed file.")
     bpm: float = Field(..., description="Estimated tempo in beats per minute.")
@@ -29,6 +36,15 @@ class AnalysisResponse(BaseModel):
     )
     duration: float = Field(..., description="Total duration of the audio in seconds.")
     sample_rate: int = Field(..., description="Sample rate used during analysis.")
+    # ── Genre classification ──────────────────────────────────────────
+    genre: str = Field(default="unknown", description="Predicted music genre.")
+    genre_confidence: float = Field(
+        default=0.0, description="Confidence of the top genre prediction (0–1)."
+    )
+    genre_top3: list[GenreTopResult] = Field(
+        default_factory=list,
+        description="Top-3 genre predictions with confidence scores.",
+    )
     message: str = Field(
         default="Analysis complete.",
         description="Human-readable status message.",

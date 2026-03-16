@@ -1,7 +1,7 @@
 """
 AutoMixAI – Dataset Preparation Script
 
-Reads audio files and annotations from the Ballroom and FMA datasets
+Reads audio files and annotations from the Ballroom, FMA, and MedleyDB datasets
 in the ``Datasets/`` folder, extracts features, and writes processed
 training data to ``data/processed/``.
 
@@ -10,6 +10,8 @@ Supported datasets:
       ground-truth annotation files.
     • **FMA Small** – ~8 000 MP3 tracks with metadata in
       ``fma_metadata/tracks.csv``.
+    • **MedleyDB** – 330+ professional multi-track mixes with detailed
+      stem-level instrument annotations in YAML metadata and Source_ID.
 
 Usage::
 
@@ -22,6 +24,7 @@ import os
 import sys
 from pathlib import Path
 
+import librosa as _lr
 import numpy as np
 
 # ── Resolve project paths ────────────────────────────────────────────
@@ -33,8 +36,9 @@ _PROJECT_DIR = _BACKEND_DIR.parent                          # AutoMixAI/
 sys.path.insert(0, str(_BACKEND_DIR))
 
 from app.services.audio_loader import load_audio
-from app.services.feature_extractor import extract_features
+from app.services.feature_extractor import extract_features, INFERENCE_HOP
 from app.services.beat_detector import detect_beats_librosa
+from app.data.medleydb_loader import MedleyDBLoader
 from app.utils.config import settings
 from app.utils.logger import get_logger
 
@@ -42,10 +46,11 @@ logger = get_logger(__name__)
 
 # ── Dataset paths ────────────────────────────────────────────────────
 DATASETS_DIR = _PROJECT_DIR / "Datasets"
-BALLROOM_AUDIO_DIR = DATASETS_DIR / "BallroomData"
+BALLROOM_AUDIO_DIR = DATASETS_DIR / "kaggle data" / "BallroomData"
 BALLROOM_BPM_DIR = DATASETS_DIR / "BallroomAnnotations" / "ballroomGroundTruth"
-FMA_AUDIO_DIR = DATASETS_DIR / "fma_small" / "fma_small"
+FMA_AUDIO_DIR = DATASETS_DIR / "kaggle data" / "fma_small" / "fma_small"
 FMA_METADATA_DIR = DATASETS_DIR / "fma_metadata" / "fma_metadata"
+MEDLEYDB_DIR = DATASETS_DIR / "medleydb"
 
 # Output
 PROCESSED_DIR = _BACKEND_DIR / "data" / "processed"
@@ -117,9 +122,8 @@ def prepare_ballroom(max_files: int | None = None) -> tuple[np.ndarray, np.ndarr
             n_frames = features.shape[0]
 
             labels = np.zeros(n_frames, dtype=np.float32)
-            import librosa as _lr
             beat_frames = _lr.time_to_frames(
-                beat_times, sr=sr, hop_length=settings.hop_length
+                beat_times, sr=sr, hop_length=INFERENCE_HOP
             )
             for bf in beat_frames:
                 if 0 <= bf < n_frames:
@@ -242,9 +246,8 @@ def prepare_fma(max_files: int | None = None) -> tuple[np.ndarray, np.ndarray]:
             n_frames = features.shape[0]
 
             labels = np.zeros(n_frames, dtype=np.float32)
-            import librosa as _lr
             beat_frames = _lr.time_to_frames(
-                beat_times, sr=sr, hop_length=settings.hop_length
+                beat_times, sr=sr, hop_length=INFERENCE_HOP
             )
             for bf in beat_frames:
                 if 0 <= bf < n_frames:
@@ -268,19 +271,138 @@ def prepare_fma(max_files: int | None = None) -> tuple[np.ndarray, np.ndarray]:
     return X, y
 
 
+# ── MedleyDB dataset ─────────────────────────────────────────────────
+
+def prepare_medleydb(max_files: int | None = None) -> tuple[np.ndarray, np.ndarray]:
+    """
+    Process MedleyDB WAV/MP3 files → (features, labels).
+
+    MedleyDB contains professional multi-track mixes with detailed metadata.
+    Extracts mix audio files and generates beat labels via librosa.
+
+    Args:
+        max_files: Optional cap on the number of files to process
+                   (useful for quick testing).
+
+    Returns:
+        ``(X, y)`` arrays.
+    """
+    try:
+        loader = MedleyDBLoader(MEDLEYDB_DIR)
+    except ImportError:
+        logger.warning("PyYAML not installed — skipping MedleyDB. Install with: pip install pyyaml")
+        return np.array([]), np.array([])
+    except Exception as e:
+        logger.warning("Error initializing MedleyDB loader: %s — skipping", e)
+        return np.array([]), np.array([])
+
+    all_features: list[np.ndarray] = []
+    all_labels: list[np.ndarray] = []
+    instrument_counts: dict[str, int] = {}
+
+    track_count = loader.get_track_count()
+    if max_files:
+        track_count = min(max_files, track_count)
+
+    logger.info("Processing %d MedleyDB files …", track_count)
+
+    processed = 0
+    for metadata in loader.iterate_metadata(max_tracks=max_files):
+        try:
+            # Get the mix audio file path
+            medleydb_data_base = MEDLEYDB_DIR / "medleydb" / "data"
+            audio_dir = medleydb_data_base.parent / "audio"
+            
+            # MedleyDB mix files are typically in: medleydb/audio/{artist}_{track}/
+            # We use the mix filename from metadata
+            if not metadata.mix_filename:
+                continue
+
+            # Try to find mix file in the expected location
+            # MedleyDB structure: medleydb/audio/Artist_Title/
+            mix_search_dir = audio_dir / f"{metadata.artist}_{metadata.title}".replace(' ', '_')
+            mix_path = mix_search_dir / metadata.mix_filename
+            
+            if not mix_path.exists():
+                # Try alternate search patterns
+                alt_patterns = [
+                    audio_dir / metadata.title / metadata.mix_filename,
+                    audio_dir / f"{metadata.artist}_{metadata.track_id}" / metadata.mix_filename,
+                ]
+                
+                mix_path = None
+                for alt_p in alt_patterns:
+                    if alt_p.exists():
+                        mix_path = alt_p
+                        break
+            
+            if not mix_path or not mix_path.exists():
+                logger.debug("MedleyDB mix file not found: %s", metadata.mix_filename)
+                continue
+
+            # Load and process audio
+            y_audio, sr = load_audio(str(mix_path))
+            features = extract_features(y_audio, sr)
+
+            # Generate beat labels using librosa
+            beat_times = detect_beats_librosa(y_audio, sr)
+            n_frames = features.shape[0]
+
+            labels = np.zeros(n_frames, dtype=np.float32)
+            beat_frames = _lr.time_to_frames(
+                beat_times, sr=sr, hop_length=INFERENCE_HOP
+            )
+            for bf in beat_frames:
+                if 0 <= bf < n_frames:
+                    labels[bf] = 1.0
+
+            all_features.append(features)
+            all_labels.append(labels)
+
+            # Collect instrument statistics
+            for instrument in metadata.get_instruments():
+                instrument_counts[instrument] = instrument_counts.get(instrument, 0) + 1
+
+            processed += 1
+            if processed % 20 == 0:
+                logger.info("  MedleyDB progress: %d / %d", processed, track_count)
+
+        except Exception as exc:
+            logger.debug("Skipping track %s: %s", metadata.title, exc)
+
+    if not all_features:
+        logger.warning("No MedleyDB files were successfully processed")
+        return np.array([]), np.array([])
+
+    X = np.vstack(all_features)
+    y = np.concatenate(all_labels)
+    
+    logger.info("MedleyDB dataset: X=%s  y=%s  (beat ratio=%.3f)", X.shape, y.shape, y.mean())
+    logger.info("MedleyDB instruments found: %d unique types", len(instrument_counts))
+    
+    # Log top instruments
+    top_instruments = sorted(instrument_counts.items(), key=lambda x: x[1], reverse=True)[:10]
+    for instrument, count in top_instruments:
+        logger.debug("  %s: %d", instrument, count)
+    
+    return X, y
+
+
 # ── Combined preparation ─────────────────────────────────────────────
 
 def prepare_all(
     max_ballroom: int | None = None,
     max_fma: int | None = None,
+    max_medleydb: int | None = None,
     save: bool = True,
 ) -> tuple[np.ndarray, np.ndarray]:
     """
-    Process both datasets and optionally save to ``data/processed/``.
+    Process all available datasets and optionally save to ``data/processed/``.
 
     Args:
         max_ballroom: Limit Ballroom files (for testing).
         max_fma:      Limit FMA files (for testing).
+        max_medleydb: Limit MedleyDB files (for testing).
         save:         If ``True``, save ``X.npy`` and ``y.npy``.
 
     Returns:
@@ -306,6 +428,15 @@ def prepare_all(
             parts_y.append(y_f)
     else:
         logger.info("FMA Small dataset not found — skipping")
+
+    # ── MedleyDB ──────────────────────────────────────────────────────
+    if MEDLEYDB_DIR.exists():
+        X_m, y_m = prepare_medleydb(max_medleydb)
+        if len(X_m) > 0:
+            parts_X.append(X_m)
+            parts_y.append(y_m)
+    else:
+        logger.info("MedleyDB dataset not found — skipping")
 
     if not parts_X:
         raise RuntimeError("No data found. Check that datasets are in Datasets/")
@@ -333,6 +464,8 @@ if __name__ == "__main__":
                         help="Max Ballroom files to process (for testing)")
     parser.add_argument("--max-fma", type=int, default=None,
                         help="Max FMA files to process (for testing)")
+    parser.add_argument("--max-medleydb", type=int, default=None,
+                        help="Max MedleyDB files to process (for testing)")
     args = parser.parse_args()
 
-    prepare_all(max_ballroom=args.max_ballroom, max_fma=args.max_fma)
+    prepare_all(max_ballroom=args.max_ballroom, max_fma=args.max_fma, max_medleydb=args.max_medleydb)
