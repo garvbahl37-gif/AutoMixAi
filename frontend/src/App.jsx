@@ -1,41 +1,83 @@
 import { useState } from "react";
-import { UploadCloud, BarChart2, Sliders, Headphones, Wand2 } from "lucide-react";
+import { UploadCloud, BarChart2, Sliders, Wand2, Headphones, Sparkles, Menu, X } from "lucide-react";
 import UploadPage from "./pages/UploadPage";
 import AnalyzePage from "./pages/AnalyzePage";
 import MixPage from "./pages/MixPage";
 import BeatGeneratorPage from "./pages/BeatGeneratorPage";
 
 const NAV = [
-  { id: "upload",   label: "Upload",    Icon: UploadCloud },
-  { id: "analyze",  label: "Analyze",   Icon: BarChart2   },
-  { id: "mix",      label: "Mix",       Icon: Sliders     },
-  { id: "generate", label: "Generator", Icon: Wand2       },
+  { id: "upload",   label: "Upload",    Icon: UploadCloud, desc: "Import audio files" },
+  { id: "analyze",  label: "Analyze",   Icon: BarChart2,   desc: "AI audio analysis" },
+  { id: "mix",      label: "Mix",       Icon: Sliders,     desc: "DJ mixing engine" },
+  { id: "generate", label: "Generator", Icon: Wand2,       desc: "Beat synthesis" },
 ];
 
 export default function App() {
-  const [page,   setPage]   = useState("upload");
+  const [page, setPage] = useState("upload");
   const [tracks, setTracks] = useState([]);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <div className="app">
-      {/* ── Sidebar ─────────────────────────────────────── */}
-      <aside className="sidebar">
+      {/* Mobile menu button */}
+      <button
+        className="btn btn-icon btn-ghost"
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+        style={{
+          position: "fixed",
+          top: 16,
+          left: 16,
+          zIndex: 400,
+          display: "none",
+        }}
+        aria-label="Toggle menu"
+      >
+        {sidebarOpen ? <X size={20} /> : <Menu size={20} />}
+      </button>
+
+      {/* Sidebar */}
+      <aside className={`sidebar ${sidebarOpen ? "open" : ""}`}>
+        {/* Logo */}
         <div className="sidebar-logo">
           <div className="logo-icon">
-            <Headphones size={22} color="white" />
+            <Headphones size={24} color="white" strokeWidth={2.5} />
           </div>
-          <h1 className="gradient-text">AutoMixAI</h1>
+          <div>
+            <h1 className="gradient-text">AutoMixAI</h1>
+            <p style={{
+              fontSize: "0.65rem",
+              color: "var(--text-dim)",
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              marginTop: 2,
+            }}>
+              AI-Powered Mixing
+            </p>
+          </div>
         </div>
 
+        {/* Navigation */}
         <nav className="sidebar-nav">
-          {NAV.map(({ id, label, Icon }) => (
+          {NAV.map(({ id, label, Icon, desc }) => (
             <button
               key={id}
               className={`nav-item ${page === id ? "active" : ""}`}
-              onClick={() => setPage(id)}
+              onClick={() => {
+                setPage(id);
+                setSidebarOpen(false);
+              }}
             >
-              <Icon size={16} />
-              <span>{label}</span>
+              <Icon size={18} strokeWidth={page === id ? 2.5 : 2} />
+              <div style={{ flex: 1, textAlign: "left" }}>
+                <span style={{ display: "block" }}>{label}</span>
+                <span style={{
+                  fontSize: "0.68rem",
+                  color: "var(--text-dim)",
+                  display: page === id ? "block" : "none",
+                }}>
+                  {desc}
+                </span>
+              </div>
               {id === "upload" && tracks.length > 0 && (
                 <span className="nav-badge">{tracks.length}</span>
               )}
@@ -43,19 +85,68 @@ export default function App() {
           ))}
         </nav>
 
+        {/* Footer */}
         <div className="sidebar-footer">
-          <p>ANN Beat Detection</p>
-          <p style={{ opacity: 0.45, marginTop: 3 }}>FastAPI · TensorFlow · librosa</p>
+          <div style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            marginBottom: 8,
+          }}>
+            <Sparkles size={12} color="var(--accent-secondary)" />
+            <span style={{ color: "var(--text-muted)", fontSize: "0.72rem" }}>
+              Powered by AI
+            </span>
+          </div>
+          <p>
+            <span style={{ color: "var(--accent-secondary)" }}>TensorFlow</span> · librosa · FastAPI
+          </p>
+          <p style={{ marginTop: 4, opacity: 0.6 }}>
+            v2.0 — Beat Detection + Genre + Tags
+          </p>
         </div>
       </aside>
 
-      {/* ── Main ────────────────────────────────────────── */}
+      {/* Main Content */}
       <main className="main-content">
-        {page === "upload"   && <UploadPage   tracks={tracks} setTracks={setTracks} />}
-        {page === "analyze"  && <AnalyzePage  tracks={tracks} setTracks={setTracks} />}
-        {page === "mix"      && <MixPage      tracks={tracks} />}
-        {page === "generate" && <BeatGeneratorPage />}
+        {page === "upload" && (
+          <UploadPage tracks={tracks} setTracks={setTracks} />
+        )}
+        {page === "analyze" && (
+          <AnalyzePage tracks={tracks} setTracks={setTracks} />
+        )}
+        {page === "mix" && (
+          <MixPage tracks={tracks} />
+        )}
+        {page === "generate" && (
+          <BeatGeneratorPage />
+        )}
       </main>
+
+      {/* Mobile overlay */}
+      {sidebarOpen && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.5)",
+            zIndex: 99,
+            display: "none",
+          }}
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      <style>{`
+        @media (max-width: 960px) {
+          .app > button:first-child {
+            display: flex !important;
+          }
+          .app > div:last-child {
+            display: block !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }
