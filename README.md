@@ -25,7 +25,7 @@
 
 ---
 
-## 🎯 Overview
+## Overview
 
 AutoMixAI is a full-stack AI-powered music analysis and DJ mixing platform. Users upload audio tracks, and the system analyzes BPM, beats, genre, instruments, mood, and tags using neural networks. The platform can automatically mix two tracks with beat-aligned crossfades and generate custom drum patterns from natural language prompts.
 
@@ -40,9 +40,9 @@ AutoMixAI is a full-stack AI-powered music analysis and DJ mixing platform. User
 
 ---
 
-## ✨ Features
+## Features
 
-### 🎵 Audio Analysis
+### Audio Analysis
 - **Beat Detection** - Neural network-based beat tracking with frame-level precision
 - **BPM Estimation** - Accurate tempo detection using onset strength analysis
 - **Genre Classification** - 10-class GTZAN classification with confidence scores
@@ -52,13 +52,13 @@ AutoMixAI is a full-stack AI-powered music analysis and DJ mixing platform. User
 - **Vocal Detection** - Identifies vocal presence vs instrumental tracks
 - **Energy Analysis** - RMS-based energy level classification
 
-### 🎛️ DJ Mixing
+### DJ Mixing
 - **Beat Alignment** - Automatic beat-grid synchronization
 - **Time Stretching** - Tempo matching without pitch distortion
 - **Crossfade Engine** - Smooth DJ-style transitions
 - **Multi-track Support** - Mix multiple tracks in sequence
 
-### 🥁 Beat Generation
+### Beat Generation
 - **Natural Language Prompts** - "Create a 120 BPM trap beat with heavy bass"
 - **20+ Genre Patterns** - From hip-hop to ambient, trap to jazz
 - **10 Drum Instruments** - Kick, snare, hi-hats, claps, toms, and more
@@ -67,7 +67,7 @@ AutoMixAI is a full-stack AI-powered music analysis and DJ mixing platform. User
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ### System Overview
 
@@ -320,7 +320,7 @@ AutoMixAI is a full-stack AI-powered music analysis and DJ mixing platform. User
 
 ---
 
-## 📊 Datasets
+## Datasets
 
 AutoMixAI was trained on multiple diverse audio datasets to achieve robust performance across different music styles and analysis tasks.
 
@@ -339,7 +339,7 @@ AutoMixAI was trained on multiple diverse audio datasets to achieve robust perfo
 
 ### Detailed Dataset Information
 
-#### 🎸 GTZAN Genre Collection
+#### GTZAN Genre Collection
 **Purpose:** Genre classification model training
 
 ```
@@ -354,7 +354,7 @@ Model:      Dense 256→128→10, softmax
 Accuracy:   ~78% (10-class)
 ```
 
-#### 🎹 NSynth Music Dataset
+#### NSynth Music Dataset
 **Purpose:** Instrument family classification
 
 ```
@@ -368,7 +368,7 @@ Features:   43-dimensional (MFCC, spectral, chroma)
 Model:      Dense 128→64→11, softmax
 ```
 
-#### 🏷️ MagnaTagATune Dataset
+#### MagnaTagATune Dataset
 **Purpose:** Multi-label music tagging, mood detection, vocal detection
 
 ```
@@ -384,7 +384,7 @@ Model:      Dense 256→128→56, sigmoid (multi-label)
 Threshold:  0.3 for tag activation
 ```
 
-#### 🥁 Drum Kit Sound Samples
+#### Drum Kit Sound Samples
 **Purpose:** Drum hit classification for pattern analysis
 
 ```
@@ -398,7 +398,7 @@ Note:       Studio-quality samples, may need augmentation
             for real-world generalization
 ```
 
-#### 🎼 Lakh MIDI Dataset
+#### Lakh MIDI Dataset
 **Purpose:** Rhythm pattern extraction for beat generation
 
 ```
@@ -411,7 +411,7 @@ Library:    pretty_midi for parsing
 Output:     midi_patterns.pkl (quantized patterns)
 ```
 
-#### 💃 Ballroom Dataset
+#### Ballroom Dataset
 **Purpose:** Beat detection model training
 
 ```
@@ -424,7 +424,7 @@ Labels:     Beat timestamp annotations (CSV)
 Features:   43-dimensional per frame
 ```
 
-#### 🎵 FMA Small
+#### FMA Small
 **Purpose:** Beat detection model training (diverse genres)
 
 ```
@@ -436,7 +436,7 @@ Labels:     Beat annotations via librosa
 Features:   43-dimensional per frame
 ```
 
-#### 🎤 MedleyDB
+#### MedleyDB
 **Purpose:** Beat detection for professional multitrack recordings
 
 ```
@@ -479,7 +479,7 @@ features = [
 
 ---
 
-## 🗂️ Project Structure
+## Project Structure
 
 ```
 AutoMixAI/
@@ -578,7 +578,7 @@ AutoMixAI/
 
 ---
 
-## 🚀 Installation
+## Installation
 
 ### Prerequisites
 
@@ -755,7 +755,7 @@ Generate a drum beat from a natural language prompt.
 
 ---
 
-## 🧠 Models
+## Models
 
 ### Model Architectures
 
@@ -813,7 +813,7 @@ python -m backend.app.model.train
 
 ---
 
-## 🔧 Configuration
+## Configuration
 
 Environment variables (prefix: `AUTOMIX_`):
 
@@ -827,7 +827,7 @@ Environment variables (prefix: `AUTOMIX_`):
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Layer | Technology |
 |-------|------------|
@@ -839,7 +839,7 @@ Environment variables (prefix: `AUTOMIX_`):
 
 ---
 
-## 📈 Performance
+## Performance
 
 | Task | Metric | Value |
 |------|--------|-------|
@@ -851,7 +851,7 @@ Environment variables (prefix: `AUTOMIX_`):
 
 ---
 
-## 🚧 Roadmap
+## Roadmap
 
 - [ ] Real-time streaming analysis
 - [ ] Key detection for harmonic mixing
@@ -863,13 +863,13 @@ Environment variables (prefix: `AUTOMIX_`):
 
 ---
 
-## 📄 License
+## License
 
 MIT License - see [LICENSE](LICENSE) for details.
 
 ---
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - [librosa](https://librosa.org/) - Audio analysis library
 - [TensorFlow](https://tensorflow.org/) - Machine learning framework
