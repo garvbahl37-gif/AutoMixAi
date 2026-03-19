@@ -33,8 +33,8 @@ AutoMixAI is a full-stack AI-powered music analysis and DJ mixing platform. User
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                              AutoMixAI Platform                             │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│  🎵 Upload    →    📊 Analyze    →    🎛️ Mix    →    🥁 Generate           │
-│  Audio Files       AI Analysis        DJ Mixing       Beat Synthesis        │
+│   Upload    →     Analyze    →     Mix    →    Generate           │
+│  Audio Files    AI Analysis     DJ Mixing   Beat Synthesis        │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
