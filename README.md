@@ -1,40 +1,21 @@
-<p align="center">
-  <img src="https://img.shields.io/badge/Python-3.12+-blue?style=for-the-badge&logo=python&logoColor=white" alt="Python"/>
-  <img src="https://img.shields.io/badge/FastAPI-0.100+-009688?style=for-the-badge&logo=fastapi&logoColor=white" alt="FastAPI"/>
-  <img src="https://img.shields.io/badge/React-18+-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React"/>
-  <img src="https://img.shields.io/badge/TensorFlow-2.15+-FF6F00?style=for-the-badge&logo=tensorflow&logoColor=white" alt="TensorFlow"/>
-  <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="License"/>
-</p>
+# AutoMixAI
+**AI-Powered Automated DJ Mixing System**
+> Beat Detection • Genre Classification • Instrument Recognition • Intelligent Mixing • Neural Beat Generation
 
-<h1 align="center">AutoMixAI</h1>
-
-<p align="center">
-  <strong>AI-Powered Automated DJ Mixing System</strong>
-  <br/>
-  <em>Beat Detection • Genre Classification • Instrument Recognition • Intelligent Mixing</em>
-</p>
-
-<p align="center">
-  <a href="#-features">Features</a> •
-  <a href="#-architecture">Architecture</a> •
-  <a href="#-datasets">Datasets</a> •
-  <a href="#-installation">Installation</a> •
-  <a href="#-api-reference">API</a> •
-  <a href="#-models">Models</a>
-</p>
+[Features](#features) • [Architecture](#architecture) • [Datasets](#datasets) • [Installation](#installation) • [API](#api-reference) • [Models](#models)
 
 ---
 
 ## Overview
 
-AutoMixAI is a full-stack AI-powered music analysis and DJ mixing platform. Users upload audio tracks, and the system analyzes BPM, beats, genre, instruments, mood, and tags using neural networks. The platform can automatically mix two tracks with beat-aligned crossfades and generate custom drum patterns from natural language prompts.
+AutoMixAI is a full-stack AI-powered music analysis and DJ mixing platform. Users upload audio tracks, and the system analyzes BPM, beats, genre, instruments, mood, and tags using neural networks. The platform can automatically mix two tracks with beat-aligned crossfades and generate full, production-ready beats from natural language prompts using a fine-tuned generative audio model.
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                              AutoMixAI Platform                             │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│   Upload    →     Analyze    →     Mix    →    Generate           │
-│  Audio Files    AI Analysis     DJ Mixing   Beat Synthesis        │
+│   Upload    →     Analyze    →     Mix    →    Generate                     │
+│  Audio Files    AI Analysis     DJ Mixing   Neural Beat Synthesis           │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -43,34 +24,37 @@ AutoMixAI is a full-stack AI-powered music analysis and DJ mixing platform. User
 ## Features
 
 ### Audio Analysis
-- **Beat Detection** - Neural network-based beat tracking with frame-level precision
-- **BPM Estimation** - Accurate tempo detection using onset strength analysis
-- **Genre Classification** - 10-class GTZAN classification with confidence scores
-- **Instrument Recognition** - NSynth-trained 11-family instrument detection
-- **Music Tagging** - Multi-label tagging with 56 descriptive tags
-- **Mood Detection** - Automatic mood inference (energetic, calm, melancholic, intense)
-- **Vocal Detection** - Identifies vocal presence vs instrumental tracks
-- **Energy Analysis** - RMS-based energy level classification
+- **Beat Detection** — Neural network-based beat tracking with frame-level precision
+- **BPM Estimation** — Accurate tempo detection using onset strength analysis
+- **Genre Classification** — 10-class GTZAN classification with confidence scores
+- **Instrument Recognition** — NSynth-trained 11-family instrument detection
+- **Music Tagging** — Multi-label tagging with 56 descriptive tags
+- **Mood Detection** — Automatic mood inference (energetic, calm, melancholic, intense)
+- **Vocal Detection** — Identifies vocal presence vs instrumental tracks
+- **Energy Analysis** — RMS-based energy level classification
+- **Key & Scale Detection** — Essentia-based key/scale extraction (confidence > 70%) for harmonic mixing
 
 ### DJ Mixing
-- **Beat Alignment** - Automatic beat-grid synchronization
-- **Time Stretching** - Tempo matching without pitch distortion
-- **Crossfade Engine** - Smooth DJ-style transitions
-- **Multi-track Support** - Mix multiple tracks in sequence
+- **Beat Alignment** — Automatic beat-grid synchronization
+- **Time Stretching** — Tempo matching without pitch distortion
+- **Crossfade Engine** — Smooth DJ-style transitions
+- **Multi-track Support** — Mix multiple tracks in sequence
 
 ### Beat Generation
-- **Natural Language Prompts** - "Create a 120 BPM trap beat with heavy bass"
-- **20+ Genre Patterns** - From hip-hop to ambient, trap to jazz
-- **10 Drum Instruments** - Kick, snare, hi-hats, claps, toms, and more
-- **Humanization** - Velocity and timing variations for natural feel
-- **Time Signature Support** - 4/4, 3/4, 6/8 patterns
+AutoMixAI's beat generator is powered by **StableBeaT** — a fine-tuned version of [Stable Audio Open 1.0](https://huggingface.co/stabilityai/stable-audio-open-1.0) trained on 20,000 trap/rap/R&B instrumentals. It moves beyond pattern-based synthesis to produce full, nuanced, production-ready audio from natural language prompts.
+
+- **Natural Language Prompts** — *"Create a 120 BPM trap beat with heavy 808 bass, dark mood, 4 bars"*
+- **Rich Subgenre Coverage** — Cloud trap, lo-fi jazz rap, chillhop, neo-soul, EDM, industrial hip-hop, and more
+- **Instrumentation Awareness** — Synth bells, plucked bass, deep sub, Rhodes keys, vocal adlibs, 808s, and beyond
+- **Key & Mood Conditioning** — Generate in a specific key/scale with targeted emotional character
+- **Humanization** — Velocity and timing variations for natural, non-quantized feel
+- **Inference Speed** — ~1 min 15 sec per generation on RTX 4050; 200 steps, CFG scale 7
 
 ---
 
 ## Architecture
 
 ### System Overview
-
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────┐
 │                                   CLIENT LAYER                                      │
@@ -79,7 +63,6 @@ AutoMixAI is a full-stack AI-powered music analysis and DJ mixing platform. User
 │  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌──────────────────┐     │  │
 │  │  │ Upload Page │  │Analyze Page │  │  Mix Page   │  │Beat Generator Page│     │  │
 │  │  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘  └────────┬─────────┘     │  │
-│  │         │                │                │                  │               │  │
 │  │         └────────────────┴────────────────┴──────────────────┘               │  │
 │  │                                   │                                           │  │
 │  │                            API Client (fetch)                                 │  │
@@ -122,7 +105,7 @@ AutoMixAI is a full-stack AI-powered music analysis and DJ mixing platform. User
 │  │                                                                                 │  │
 │  │   ┌─────────────────┐   ┌─────────────────┐   ┌─────────────────┐              │  │
 │  │   │ drum_classifier │   │ beat_generator  │   │     mixer       │              │  │
-│  │   │  Kick/Snare/HH  │   │  NLP + Synth    │   │  Time-stretch   │              │  │
+│  │   │  Kick/Snare/HH  │   │ StableBeaT SAO  │   │  Time-stretch   │              │  │
 │  │   └─────────────────┘   └─────────────────┘   └─────────────────┘              │  │
 │  │                                                                                 │  │
 │  └────────────────────────────────────────────────────────────────────────────────┘  │
@@ -135,15 +118,17 @@ AutoMixAI is a full-stack AI-powered music analysis and DJ mixing platform. User
 │  │                          Neural Network Models                                  │  │
 │  │                                                                                 │  │
 │  │   ┌─────────────────────────────────────────────────────────────────────────┐  │  │
-│  │   │  beat_detector.h5    │  Dense ANN (128→64→1) for beat activation        │  │  │
+│  │   │  beat_detector.h5      │  Dense ANN (128→64→1) for beat activation      │  │  │
 │  │   ├─────────────────────────────────────────────────────────────────────────┤  │  │
-│  │   │  genre_classifier.h5 │  Dense (256→128→10) for GTZAN genres             │  │  │
+│  │   │  genre_classifier.h5   │  Dense (256→128→10) for GTZAN genres           │  │  │
 │  │   ├─────────────────────────────────────────────────────────────────────────┤  │  │
-│  │   │  nsynth_classifier.h5│  Dense (128→64→11) for instrument families       │  │  │
+│  │   │  nsynth_classifier.h5  │  Dense (128→64→11) for instrument families     │  │  │
 │  │   ├─────────────────────────────────────────────────────────────────────────┤  │  │
-│  │   │  tag_predictor.h5    │  Dense (256→128→56) for multi-label tagging      │  │  │
+│  │   │  tag_predictor.h5      │  Dense (256→128→56) for multi-label tagging    │  │  │
 │  │   ├─────────────────────────────────────────────────────────────────────────┤  │  │
-│  │   │  drum_classifier.h5  │  Dense (64→32→4) for drum classification         │  │  │
+│  │   │  drum_classifier.h5    │  Dense (64→32→4) for drum classification       │  │  │
+│  │   ├─────────────────────────────────────────────────────────────────────────┤  │  │
+│  │   │  stable_beat/ (LoRA)   │  SAO 1.0 fine-tuned on 40k trap/rap segments   │  │  │
 │  │   └─────────────────────────────────────────────────────────────────────────┘  │  │
 │  │                                                                                 │  │
 │  │   Feature Scalers: feature_scaler.pkl, genre_scaler.pkl, nsynth_scaler.pkl,   │  │
@@ -153,7 +138,6 @@ AutoMixAI is a full-stack AI-powered music analysis and DJ mixing platform. User
 ```
 
 ### Analysis Pipeline Flowchart
-
 ```
                               ┌─────────────────┐
                               │   Audio File    │
@@ -205,7 +189,6 @@ AutoMixAI is a full-stack AI-powered music analysis and DJ mixing platform. User
 ```
 
 ### Mixing Engine Flowchart
-
 ```
      Track A                                           Track B
         │                                                 │
@@ -253,6 +236,8 @@ AutoMixAI is a full-stack AI-powered music analysis and DJ mixing platform. User
 
 ### Beat Generator Flowchart
 
+The beat generator uses **StableBeaT**, a LoRA fine-tune of Stable Audio Open 1.0, paired with an NLP preprocessing pipeline and Llama-assisted prompt enrichment.
+
 ```
                     ┌────────────────────────────────────┐
                     │           User Prompt              │
@@ -264,57 +249,52 @@ AutoMixAI is a full-stack AI-powered music analysis and DJ mixing platform. User
                     ┌────────────────────────────────────┐
                     │         NLP Parser                 │
                     │  ┌──────────────────────────────┐  │
-                    │  │ BPM: 120 (regex \d+ bpm)     │  │
+                    │  │ BPM:   120 (regex \d+ bpm)   │  │
                     │  │ Genre: trap (keyword match)  │  │
-                    │  │ Mood: dark (mood keywords)   │  │
-                    │  │ Bars: 4 (regex \d+ bar)      │  │
+                    │  │ Mood:  dark (mood keywords)  │  │
+                    │  │ Bars:  4 (regex \d+ bar)     │  │
+                    │  │ Key:   inferred or explicit  │  │
                     │  │ Energy: high (keyword match) │  │
                     │  └──────────────────────────────┘  │
                     └───────────────┬────────────────────┘
                                     │
                                     ▼
                     ┌────────────────────────────────────┐
-                    │       Pattern Generator            │
+                    │   Llama 3.1 3B Prompt Enrichment   │
                     │                                    │
-                    │  Genre: trap                       │
-                    │  ┌────────────────────────────┐    │
-                    │  │ kick:   [1,0,0,0,1,0,0,0,  │    │
-                    │  │          1,0,1,0,0,0,0,0]  │    │
-                    │  │ snare:  [0,0,0,0,1,0,0,0,  │    │
-                    │  │          0,0,0,0,1,0,0,0]  │    │
-                    │  │ hihat:  [1,1,1,1,1,1,1,1,  │    │
-                    │  │          1,1,1,1,1,1,1,1]  │    │
-                    │  └────────────────────────────┘    │
+                    │  Expands parsed params into a      │
+                    │  rich, human-readable prompt with  │
+                    │  synonym variety and subgenre      │
+                    │  nuance for the generative model   │
+                    │                                    │
+                    │  Input:  {genre, bpm, mood, key,   │
+                    │           instruments, energy}     │
+                    │  Output: "A dark trap beat at      │
+                    │  120 BPM in C minor, featuring     │
+                    │  heavy 808 bass and synth bells..." │
                     └───────────────┬────────────────────┘
                                     │
                                     ▼
                     ┌────────────────────────────────────┐
-                    │       Drum Synthesizer             │
+                    │     StableBeaT (SAO LoRA)          │
                     │                                    │
-                    │  ┌─────────┐  kick: sine + decay   │
-                    │  │  Kick   │  60-150Hz sweep       │
-                    │  └─────────┘                       │
-                    │  ┌─────────┐  snare: noise + tone  │
-                    │  │  Snare  │  200Hz + bandpass     │
-                    │  └─────────┘                       │
-                    │  ┌─────────┐  hihat: noise + HP    │
-                    │  │  HiHat  │  8kHz highpass        │
-                    │  └─────────┘                       │
-                    └───────────────┬────────────────────┘
-                                    │
-                                    ▼
-                    ┌────────────────────────────────────┐
-                    │       Humanization                 │
+                    │  Fine-tuned Stable Audio Open 1.0  │
+                    │  • 40k trap/rap/R&B segments       │
+                    │  • ~277h of audio, 14 epochs       │
+                    │  • Trained on A100 (~42h)          │
+                    │  • 200 steps, CFG scale 7          │
+                    │  • Duration: up to 47s per output  │
                     │                                    │
-                    │  Velocity: ±15% random variation   │
-                    │  Timing: ±5ms micro-shifts         │
-                    │  Swing: 0-30% shuffle amount       │
+                    │  Learns: synth bells, deep sub,    │
+                    │  plucked bass, 808s, vocal chops,  │
+                    │  trap rhythms, harmonic structures │
                     └───────────────┬────────────────────┘
                                     │
                                     ▼
                     ┌────────────────────────────────────┐
                     │       Output WAV                   │
                     │       44.1kHz, 16-bit              │
+                    │       Full generative beat audio   │
                     └────────────────────────────────────┘
 ```
 
@@ -327,125 +307,172 @@ AutoMixAI was trained on multiple diverse audio datasets to achieve robust perfo
 ### Training Datasets Summary
 
 | Dataset | Task | Samples | Classes/Labels | Source |
-|---------|------|---------|----------------|--------|
-| **GTZAN** | Genre Classification | 1,000 | 10 genres | Kaggle |
-| **NSynth** | Instrument Classification | 305,979 | 11 families | Kaggle |
-| **MagnaTagATune** | Music Tagging | 25,863 | 56 tags | Kaggle |
-| **Drum Kit Sounds** | Drum Classification | ~150 | 4 classes | Kaggle |
-| **Lakh MIDI** | Pattern Generation | 45,000+ | Rhythm patterns | Kaggle |
-| **Ballroom** | Beat Detection | 698 | Beat annotations | Research |
-| **FMA Small** | Beat Detection | 8,000 | Beat annotations | Research |
-| **MedleyDB** | Beat Detection | 122 | Beat annotations | Research |
+|---|---|---|---|---|
+| GTZAN | Genre Classification | 1,000 | 10 genres | Kaggle |
+| NSynth | Instrument Classification | 305,979 | 11 families | Kaggle |
+| MagnaTagATune | Music Tagging | 25,863 | 56 tags | Kaggle |
+| Drum Kit Sounds | Drum Classification | ~150 | 4 classes | Kaggle |
+| Lakh MIDI | Pattern Generation | 45,000+ | Rhythm patterns | Kaggle |
+| Trap/Rap Beats | Beat Generation (generative) | 40,000 segments (20k tracks) | Instruments, mood, genre, key, BPM | Custom |
+| Ballroom | Beat Detection | 698 | Beat annotations | Research |
+| FMA Small | Beat Detection | 8,000 | Beat annotations | Research |
+| MedleyDB | Beat Detection | 122 | Beat annotations | Research |
+
+---
 
 ### Detailed Dataset Information
 
 #### GTZAN Genre Collection
-**Purpose:** Genre classification model training
-
 ```
-Source:     Kaggle - andradaolteanu/gtzan-dataset-music-genre-classification
-Tracks:     1,000 (100 per genre × 10 genres)
-Duration:   30 seconds each
-Format:     WAV, 22050Hz mono
-Genres:     blues, classical, country, disco, hiphop,
-            jazz, metal, pop, reggae, rock
-Features:   57-dimensional (chroma, spectral, MFCC)
-Model:      Dense 256→128→10, softmax
-Accuracy:   ~78% (10-class)
+Purpose:  Genre classification model training
+Source:   Kaggle - andradaolteanu/gtzan-dataset-music-genre-classification
+Tracks:   1,000 (100 per genre × 10 genres)
+Duration: 30 seconds each
+Format:   WAV, 22050Hz mono
+Genres:   blues, classical, country, disco, hiphop,
+          jazz, metal, pop, reggae, rock
+Features: 57-dimensional (chroma, spectral, MFCC)
+Model:    Dense 256→128→10, softmax
+Accuracy: ~78% (10-class)
 ```
 
 #### NSynth Music Dataset
-**Purpose:** Instrument family classification
-
 ```
-Source:     Kaggle - anubhavchhabra/nsynth-music-dataset
-Samples:    305,979 musical notes
-Duration:   4 seconds each
-Format:     TFRecord (parsed to NumPy)
-Families:   bass, brass, flute, guitar, keyboard, mallet,
-            organ, reed, string, synth_lead, vocal
-Features:   43-dimensional (MFCC, spectral, chroma)
-Model:      Dense 128→64→11, softmax
+Purpose:  Instrument family classification
+Source:   Kaggle - anubhavchhabra/nsynth-music-dataset
+Samples:  305,979 musical notes
+Duration: 4 seconds each
+Format:   TFRecord (parsed to NumPy)
+Families: bass, brass, flute, guitar, keyboard, mallet,
+          organ, reed, string, synth_lead, vocal
+Features: 43-dimensional (MFCC, spectral, chroma)
+Model:    Dense 128→64→11, softmax
 ```
 
 #### MagnaTagATune Dataset
-**Purpose:** Multi-label music tagging, mood detection, vocal detection
-
 ```
-Source:     Kaggle - shrirangmahajan/magnatagatune
-Clips:      25,863 audio clips (after filtering)
-Duration:   ~30 seconds each
-Format:     MP3
-Labels:     188 original → 56 valid tags (filtered for quality)
-Tags:       guitar, piano, drums, female voice, fast, slow,
-            rock, electronic, classical, ambient, etc.
-Features:   43-dimensional
-Model:      Dense 256→128→56, sigmoid (multi-label)
-Threshold:  0.3 for tag activation
+Purpose:  Multi-label music tagging, mood detection, vocal detection
+Source:   Kaggle - shrirangmahajan/magnatagatune
+Clips:    25,863 audio clips (after filtering)
+Duration: ~30 seconds each
+Format:   MP3
+Labels:   188 original → 56 valid tags (filtered for quality)
+Tags:     guitar, piano, drums, female voice, fast, slow,
+          rock, electronic, classical, ambient, etc.
+Features: 43-dimensional
+Model:    Dense 256→128→56, sigmoid (multi-label)
+Threshold: 0.3 for tag activation
 ```
 
 #### Drum Kit Sound Samples
-**Purpose:** Drum hit classification for pattern analysis
-
 ```
-Source:     Kaggle - sparshgupta/drum-kit-sound-samples
-Samples:    ~150 isolated drum hits
-Classes:    kick, snare, hihat, tom
-Format:     WAV
-Features:   43-dimensional (onset + spectral focused)
-Model:      Dense 64→32→4, softmax
-Note:       Studio-quality samples, may need augmentation
-            for real-world generalization
+Purpose:  Drum hit classification for pattern analysis
+Source:   Kaggle - sparshgupta/drum-kit-sound-samples
+Samples:  ~150 isolated drum hits
+Classes:  kick, snare, hihat, tom
+Format:   WAV
+Features: 43-dimensional (onset + spectral focused)
+Model:    Dense 64→32→4, softmax
+Note:     Studio-quality samples, may need augmentation
+          for real-world generalization
 ```
 
 #### Lakh MIDI Dataset
-**Purpose:** Rhythm pattern extraction for beat generation
+```
+Purpose:  Rhythm pattern extraction for beat generation templates
+Source:   Kaggle - federicodellellis/lakh-midi-dataset-clean
+Files:    45,000+ MIDI files
+Content:  Full songs with drum tracks
+Extracted: Drum onset patterns, velocity information
+Usage:    Pattern templates for beat generator
+Library:  pretty_midi for parsing
+Output:   midi_patterns.pkl (quantized patterns)
+```
 
+#### Trap/Rap Beats Dataset (StableBeaT Training)
 ```
-Source:     Kaggle - federicodellellis/lakh-midi-dataset-clean
-Files:      45,000+ MIDI files
-Content:    Full songs with drum tracks
-Extracted:  Drum onset patterns, velocity information
-Usage:      Pattern templates for beat generator
-Library:    pretty_midi for parsing
-Output:     midi_patterns.pkl (quantized patterns)
+Purpose:  Fine-tuning Stable Audio Open 1.0 for modern beat generation
+Tracks:   20,000 trap/rap/R&B instrumentals
+Subgenres: Cloud trap, lo-fi jazz rap, R&B, EDM, industrial hip-hop,
+           jazzy chillhop, neo-soul, boom bap
+Segments: 2 × 20–35s per track → 40,000 total audio segments
+Duration: ~277 hours of audio
+Tagging:  CLAP LAION model — instruments, moods, genres per segment
+BPM/Key:  Essentia deeptemp-k16-3 (confidence > 70%)
+Prompt Gen: Llama 3.1 3B (local) for human-readable natural language prompts
 ```
+
+Each segment is annotated with rich metadata:
+
+```json
+{
+  "39118.wav": {
+    "instruments_tags": ["plucked guitar", "synth bells", "movie sample"],
+    "genres_tags": ["rap with soul"],
+    "moods_tags": ["trap melancholic", "love"],
+    "key": "G",
+    "scale": "minor",
+    "tempo": 109.0,
+    "start": 63,
+    "duration": 26
+  }
+}
+```
+
+Final training prompts generated by Llama 3.1 3B:
+```json
+{
+  "filepath": "39118.wav",
+  "start": 63,
+  "duration": 26,
+  "prompt": "A melancholic and love-inspired rap with soul beat at 109 BPM in G minor, using plucked guitar, synth bells, and movie sample."
+}
+```
+
+**Tag Embedding Clusters (T5-Base)**
+
+T5-Base encodes the dataset tags into five semantically distinct groups:
+- **Emotion** — cheerful, joyful, dreamy
+- **Groove** — swing groove, nylon guitar, movie sample
+- **Genre** — g-funk, chill rap beat, jazzy chillhop
+- **Sonority** — trap vocal, trap guitar
+
+Silhouette Score: **0.095** — clusters are intentionally close, reflecting the semantic density of trap music's vocabulary.
 
 #### Ballroom Dataset
-**Purpose:** Beat detection model training
-
 ```
-Source:     Research dataset (ballroomdancers.com)
-Tracks:     698 dance music excerpts
-Duration:   ~30 seconds each
-Genres:     Waltz, Tango, Foxtrot, Quickstep,
-            Viennese Waltz, Samba, ChaCha, Rumba, Jive
-Labels:     Beat timestamp annotations (CSV)
-Features:   43-dimensional per frame
+Purpose:  Beat detection model training
+Source:   Research dataset (ballroomdancers.com)
+Tracks:   698 dance music excerpts
+Duration: ~30 seconds each
+Genres:   Waltz, Tango, Foxtrot, Quickstep,
+          Viennese Waltz, Samba, ChaCha, Rumba, Jive
+Labels:   Beat timestamp annotations (CSV)
+Features: 43-dimensional per frame
 ```
 
 #### FMA Small
-**Purpose:** Beat detection model training (diverse genres)
-
 ```
-Source:     Free Music Archive
-Tracks:     8,000
-Duration:   30 seconds each
-Genres:     8 balanced genres
-Labels:     Beat annotations via librosa
-Features:   43-dimensional per frame
+Purpose:  Beat detection model training (diverse genres)
+Source:   Free Music Archive
+Tracks:   8,000
+Duration: 30 seconds each
+Genres:   8 balanced genres
+Labels:   Beat annotations via librosa
+Features: 43-dimensional per frame
 ```
 
 #### MedleyDB
-**Purpose:** Beat detection for professional multitrack recordings
+```
+Purpose:  Beat detection for professional multitrack recordings
+Source:   NYU Music and Audio Research Lab
+Tracks:   122 multitrack songs
+Content:  Full studio productions
+Labels:   Expert beat annotations
+Usage:    Fine-tuning beat detector on complex mixes
+```
 
-```
-Source:     NYU Music and Audio Research Lab
-Tracks:     122 multitrack songs
-Content:    Full studio productions
-Labels:     Expert beat annotations
-Usage:      Fine-tuning beat detector on complex mixes
-```
+---
 
 ### Feature Extraction
 
@@ -454,26 +481,26 @@ All audio features are extracted using librosa with consistent parameters:
 ```python
 # Common Parameters
 SAMPLE_RATE = 22050
-HOP_LENGTH = 1024  # ~46ms per frame
-N_FFT = 2048
-N_MELS = 128
-N_MFCC = 20
+HOP_LENGTH  = 1024  # ~46ms per frame
+N_FFT       = 2048
+N_MELS      = 128
+N_MFCC      = 20
 
 # 43-Dimensional Feature Vector (per frame)
 features = [
-    mfcc[0:13],           # 13 dims - Timbre
-    spectral_centroid,    # 1 dim  - Brightness
-    spectral_bandwidth,   # 1 dim  - Spread
-    spectral_rolloff,     # 1 dim  - High-freq energy
-    spectral_contrast[7], # 7 dims - Harmonic structure
-    spectral_flatness,    # 1 dim  - Noise vs tone
-    zero_crossing_rate,   # 1 dim  - Percussive content
-    rms_energy,           # 1 dim  - Loudness
-    onset_strength,       # 1 dim  - Transient detection
-    chroma[0:12],         # 12 dims - Pitch class
-    tempo_feature,        # 1 dim  - BPM context
-    beat_sync,            # 1 dim  - Beat alignment
-    delta_mfcc[0:1],      # 1 dim  - Temporal change
+    mfcc[0:13],            # 13 dims - Timbre
+    spectral_centroid,     #  1 dim  - Brightness
+    spectral_bandwidth,    #  1 dim  - Spread
+    spectral_rolloff,      #  1 dim  - High-freq energy
+    spectral_contrast[7],  #  7 dims - Harmonic structure
+    spectral_flatness,     #  1 dim  - Noise vs tone
+    zero_crossing_rate,    #  1 dim  - Percussive content
+    rms_energy,            #  1 dim  - Loudness
+    onset_strength,        #  1 dim  - Transient detection
+    chroma[0:12],          # 12 dims - Pitch class
+    tempo_feature,         #  1 dim  - BPM context
+    beat_sync,             #  1 dim  - Beat alignment
+    delta_mfcc[0:1],       #  1 dim  - Temporal change
 ]
 ```
 
@@ -507,13 +534,14 @@ AutoMixAI/
 │       │   ├── instrument_classifier.py  # NSynth classification
 │       │   ├── tag_predictor.py      # MagnaTagATune tagging
 │       │   ├── drum_classifier.py    # Drum hit classification
-│       │   ├── beat_generator.py     # NLP-based beat synthesis
+│       │   ├── beat_generator.py     # StableBeaT generative pipeline
 │       │   └── mixer.py              # DJ mixing engine
 │       │
 │       ├── model/                    # ML Components
-│       │   ├── ann_model.py          # Model architecture
+│       │   ├── ann_model.py          # ANN architecture
 │       │   ├── train.py              # Training script
-│       │   └── inference.py          # Model inference
+│       │   ├── inference.py          # ANN inference
+│       │   └── stable_beat/          # StableBeaT LoRA weights + config
 │       │
 │       ├── data/                     # Data Processing
 │       │   ├── prepare_data.py       # Dataset → X.npy/y.npy
@@ -526,8 +554,8 @@ AutoMixAI/
 │       │
 │       └── storage/                  # File Storage
 │           ├── uploads/              # Uploaded audio files
-│           ├── output/               # Generated mixes
-│           └── models/               # Trained .h5 models
+│           ├── output/               # Generated mixes & beats
+│           └── models/               # Trained model weights
 │               ├── beat_detector.h5
 │               ├── feature_scaler.pkl
 │               ├── genre_classifier.h5
@@ -540,22 +568,23 @@ AutoMixAI/
 │               ├── tag_labels.pkl
 │               ├── drum_classifier.h5
 │               ├── drum_scaler.pkl
-│               └── midi_patterns.pkl
+│               ├── midi_patterns.pkl
+│               └── stable_beat/      # StableBeaT LoRA checkpoint
 │
 ├── frontend/                         # React Frontend
-│   ├── index.html                    # HTML entry point
-│   ├── vite.config.js                # Vite configuration
-│   ├── package.json                  # Dependencies
+│   ├── index.html
+│   ├── vite.config.js
+│   ├── package.json
 │   └── src/
-│       ├── main.jsx                  # React entry point
-│       ├── App.jsx                   # Main app + routing
-│       ├── api.js                    # API client
-│       ├── index.css                 # Global styles
-│       ├── components/               # Shared components
+│       ├── main.jsx
+│       ├── App.jsx
+│       ├── api.js
+│       ├── index.css
+│       ├── components/
 │       │   ├── WaveformPlayer.jsx
 │       │   ├── StatCard.jsx
 │       │   └── GenreBar.jsx
-│       └── pages/                    # Page components
+│       └── pages/
 │           ├── UploadPage.jsx
 │           ├── AnalyzePage.jsx
 │           ├── MixPage.jsx
@@ -572,8 +601,8 @@ AutoMixAI/
 │   ├── fma_small/
 │   └── medleydb/
 │
-├── requirements.txt                  # Python dependencies
-└── README.md                         # This file
+├── requirements.txt
+└── README.md
 ```
 
 ---
@@ -581,13 +610,12 @@ AutoMixAI/
 ## Installation
 
 ### Prerequisites
-
 - Python 3.10+
 - Node.js 18+
 - FFmpeg (for audio processing)
+- CUDA-capable GPU recommended for beat generation inference
 
 ### Backend Setup
-
 ```bash
 # Clone the repository
 git clone https://github.com/yourusername/AutoMixAI.git
@@ -600,62 +628,53 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 # Install Python dependencies
 pip install -r requirements.txt
 
-# Download models (if not training from scratch)
-# Place .h5 and .pkl files in backend/app/storage/models/
+# Place model weights in backend/app/storage/models/
+# ANN models: .h5 and .pkl files
+# StableBeaT: LoRA checkpoint in stable_beat/
 ```
 
 ### Frontend Setup
-
 ```bash
 cd frontend
-
-# Install dependencies
 npm install
-
-# Start development server
 npm run dev
 ```
 
 ### Running the Application
-
 ```bash
-# Terminal 1: Start backend
+# Terminal 1: Backend
 cd backend
 uvicorn app.main:app --reload --port 8002
 
-# Terminal 2: Start frontend
+# Terminal 2: Frontend
 cd frontend
 npm run dev
 ```
 
-Access the application at `http://localhost:5173`
+Access the application at **http://localhost:5173**
 
 ---
 
-## 📡 API Reference
+## API Reference
 
 ### Endpoints
 
 | Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/upload` | Upload audio file |
-| `POST` | `/analyze` | Analyze uploaded track |
-| `POST` | `/mix` | Mix two tracks |
-| `POST` | `/generate` | Generate beat from prompt |
-| `GET` | `/output/{file_id}` | Download output file |
+|---|---|---|
+| POST | `/upload` | Upload audio file |
+| POST | `/analyze` | Analyze uploaded track |
+| POST | `/mix` | Mix two tracks |
+| POST | `/generate` | Generate beat from prompt |
+| GET | `/output/{file_id}` | Download output file |
+
+---
 
 ### POST /upload
-
-Upload an audio file for analysis.
-
-**Request:**
 ```bash
 curl -X POST "http://localhost:8002/upload" \
   -H "Content-Type: multipart/form-data" \
   -F "file=@track.mp3"
 ```
-
-**Response:**
 ```json
 {
   "file_id": "abc123-def456-ghi789",
@@ -663,35 +682,30 @@ curl -X POST "http://localhost:8002/upload" \
 }
 ```
 
+---
+
 ### POST /analyze
-
-Analyze an uploaded track.
-
-**Request:**
 ```json
-{
-  "file_id": "abc123-def456-ghi789"
-}
-```
+// Request
+{ "file_id": "abc123-def456-ghi789" }
 
-**Response:**
-```json
+// Response
 {
   "bpm": 128.5,
-  "beat_times": [0.45, 0.92, 1.38, 1.85, ...],
+  "beat_times": [0.45, 0.92, 1.38, 1.85],
   "duration": 180.5,
   "genre": "hiphop",
   "genre_confidence": 0.87,
   "genre_top3": [
     {"genre": "hiphop", "confidence": 0.87},
-    {"genre": "pop", "confidence": 0.08},
-    {"genre": "jazz", "confidence": 0.03}
+    {"genre": "pop",    "confidence": 0.08},
+    {"genre": "jazz",   "confidence": 0.03}
   ],
   "dominant_instrument": "keyboard",
   "instrument_confidence": 0.72,
   "instruments_top3": [
-    {"instrument": "keyboard", "confidence": 0.72},
-    {"instrument": "bass", "confidence": 0.15},
+    {"instrument": "keyboard",   "confidence": 0.72},
+    {"instrument": "bass",       "confidence": 0.15},
     {"instrument": "synth_lead", "confidence": 0.08}
   ],
   "tags": ["piano", "drums", "slow", "ambient"],
@@ -699,27 +713,24 @@ Analyze an uploaded track.
     {"tag": "piano", "score": 0.89},
     {"tag": "drums", "score": 0.76}
   ],
-  "mood": "calm",
+  "mood":       "calm",
   "has_vocals": false,
-  "energy": "medium"
+  "energy":     "medium"
 }
 ```
 
+---
+
 ### POST /mix
-
-Mix two uploaded tracks.
-
-**Request:**
 ```json
+// Request
 {
   "track_a_id": "file-id-1",
   "track_b_id": "file-id-2",
   "crossfade_duration": 8.0
 }
-```
 
-**Response:**
-```json
+// Response
 {
   "output_file_id": "mix-xyz789",
   "duration": 240.5,
@@ -727,29 +738,28 @@ Mix two uploaded tracks.
 }
 ```
 
+---
+
 ### POST /generate
 
-Generate a drum beat from a natural language prompt.
+Generate a full beat using the StableBeaT generative pipeline. Prompts are enriched via Llama 3.1 3B before being passed to the fine-tuned model.
 
-**Request:**
 ```json
+// Request
 {
   "prompt": "Create a 120 BPM trap beat with heavy 808s, 4 bars, dark mood"
 }
-```
 
-**Response:**
-```json
+// Response
 {
   "output_file_id": "beat-abc123",
   "bpm": 120,
   "bars": 4,
   "genre": "trap",
-  "pattern": {
-    "kick": [1,0,0,0,1,0,0,0,1,0,1,0,0,0,0,0],
-    "snare": [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
-    "hihat": [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1]
-  }
+  "key": "C minor",
+  "enriched_prompt": "A dark trap beat at 120 BPM in C minor, featuring heavy 808 bass, synth bells, and a melancholic atmosphere.",
+  "duration_seconds": 47,
+  "generation_steps": 200
 }
 ```
 
@@ -761,16 +771,16 @@ Generate a drum beat from a natural language prompt.
 
 #### Beat Detector
 ```
-Input: 43-dim feature vector
+Input:  43-dim feature vector
 Dense(128, relu) → Dropout(0.3)
-Dense(64, relu) → Dropout(0.3)
+Dense(64,  relu) → Dropout(0.3)
 Dense(1, sigmoid)
 Output: P(beat) ∈ [0, 1]
 ```
 
 #### Genre Classifier
 ```
-Input: 57-dim feature vector
+Input:  57-dim feature vector
 Dense(256, relu) → BatchNorm → Dropout(0.4)
 Dense(128, relu) → BatchNorm → Dropout(0.4)
 Dense(10, softmax)
@@ -779,26 +789,60 @@ Output: 10-class probabilities
 
 #### Instrument Classifier
 ```
-Input: 43-dim feature vector
+Input:  43-dim feature vector
 Dense(128, relu) → Dropout(0.3)
-Dense(64, relu) → Dropout(0.3)
+Dense(64,  relu) → Dropout(0.3)
 Dense(11, softmax)
 Output: 11-family probabilities
 ```
 
 #### Tag Predictor
 ```
-Input: 43-dim feature vector
+Input:  43-dim feature vector
 Dense(256, relu) → Dropout(0.4)
 Dense(128, relu) → Dropout(0.4)
 Dense(56, sigmoid)
 Output: Multi-label scores (threshold: 0.3)
 ```
 
-### Training
+#### StableBeaT (Beat Generator)
+```
+Base:      Stable Audio Open 1.0
+Fine-tune: LoRA (via LoRAW pipeline)
+Dataset:   40,000 trap/rap/R&B audio segments (~277h)
+Epochs:    14   |   Batch size: 16   |   Steps: ~35,000
+Hardware:  NVIDIA A100 (Google Colab, ~42h training)
+Inference: ~1m 15s on RTX 4050 Laptop GPU
+Settings:  200 steps, CFG scale 7, duration up to 47s
+```
 
-To train models from scratch:
+### StableBeaT Generation Examples
 
+All examples below were generated with 200 steps, CFG scale 7, duration 47s.
+
+| Prompt | BPM | Spectral Centroid | H/P Ratio | CLAP Score |
+|---|---|---|---|---|
+| Dark melancholic cloud trap, nostalgic piano, plucked bass, synth bells, 110 BPM | 106.13 | 1159.43 | 0.460 | 0.489 |
+| Lo-fi jazz rap, 85 BPM, deep sub, plucked bass, vocal chop, chill jazzy mood | 82.72 | 784.82 | 0.457 | 0.429 |
+| Melancholic trap, 105 BPM, synth bells, deep sub, minor piano, airy vocal pads | 100.45 | 2540.28 | 1.412 | 0.523 |
+| Jazzy chillhop, 101 BPM, synth bells, vocal pad, movie sample, nostalgic mood | 148.02 | 4287.26 | 2.963 | 0.552 |
+| Smooth trap, 115 BPM, electric guitar, plucked bass, vocal adlibs, warm pads | 82.72 | 1056.42 | 0.645 | 0.478 |
+| Moody cloud trap, 100 BPM, boomy bass, synth bells, melodic piano | 144.2 | 2458.5 | 0.738 | 0.363 |
+| Neo-soul R&B, 90 BPM, D major, live bass, soft Rhodes, analog drum grooves | 130.81 | 1000.87 | 0.679 | 0.250 |
+
+### StableBeaT Performance Notes
+
+**Strengths:**
+- Excels on melodic, atmospheric beats with smooth harmonic coherence
+- Strong instrument-mood-tempo consistency; outputs feel musically balanced
+- Captures nuanced subgenre characteristics (cloud trap, chillhop, neo-soul)
+
+**Current Limitations:**
+- Underperforms on underrepresented styles (boom bap, high-energy dense percussion)
+- CLAP LAION tagging not specialized for trap/hip-hop → imprecise labeling of snares, hi-hats, 808s
+- Melodic elements (piano, synths) can sound quieter than drums due to frequency range differences
+
+### Training (ANN Models)
 ```bash
 # Prepare beat detection data
 python -m backend.app.data.prepare_data
@@ -806,7 +850,7 @@ python -m backend.app.data.prepare_data
 # Train beat detector
 python -m backend.app.model.train
 
-# For other models, use Kaggle notebooks:
+# Other models use Kaggle notebooks:
 # notebooks/kaggle/GenreClassifier_Training.ipynb
 # notebooks/kaggle/MultiTask_Audio_Training.ipynb
 ```
@@ -818,11 +862,12 @@ python -m backend.app.model.train
 Environment variables (prefix: `AUTOMIX_`):
 
 | Variable | Default | Description |
-|----------|---------|-------------|
+|---|---|---|
 | `AUTOMIX_SAMPLE_RATE` | 22050 | Audio sample rate |
 | `AUTOMIX_HOP_LENGTH` | 512 | STFT hop length (training) |
-| `AUTOMIX_MODEL_PATH` | `storage/models/beat_detector.h5` | Beat model path |
-| `AUTOMIX_GENRE_MODEL_PATH` | `storage/models/genre_classifier.h5` | Genre model |
+| `AUTOMIX_MODEL_PATH` | storage/models/beat_detector.h5 | Beat model path |
+| `AUTOMIX_GENRE_MODEL_PATH` | storage/models/genre_classifier.h5 | Genre model |
+| `AUTOMIX_STABLE_BEAT_PATH` | storage/models/stable_beat/ | StableBeaT LoRA path |
 | `AUTOMIX_DEBUG` | false | Enable debug logging |
 
 ---
@@ -830,24 +875,30 @@ Environment variables (prefix: `AUTOMIX_`):
 ## Tech Stack
 
 | Layer | Technology |
-|-------|------------|
-| **Frontend** | React 18, Vite, WaveSurfer.js, Lucide Icons |
-| **Backend** | FastAPI, Uvicorn, Pydantic |
-| **ML/AI** | TensorFlow/Keras, scikit-learn, NumPy |
-| **Audio** | librosa, soundfile, pyrubberband |
-| **Storage** | File-based (uploads/, output/) |
+|---|---|
+| Frontend | React 18, Vite, WaveSurfer.js, Lucide Icons |
+| Backend | FastAPI, Uvicorn, Pydantic |
+| ML / ANN | TensorFlow/Keras, scikit-learn, NumPy |
+| Beat Generation | Stable Audio Open 1.0, LoRAW, Stable Audio Tools |
+| Prompt Enrichment | Llama 3.1 3B (local inference) |
+| Audio Tagging | CLAP LAION model |
+| Feature Extraction | librosa, Essentia |
+| Audio I/O | soundfile, pyrubberband |
+| Storage | File-based (uploads/, output/) |
 
 ---
 
 ## Performance
 
 | Task | Metric | Value |
-|------|--------|-------|
+|---|---|---|
 | Beat Detection | F1-score | ~0.85 |
 | BPM Estimation | Accuracy (±2 BPM) | ~92% |
 | Genre Classification | Accuracy (10-class) | ~78% |
 | Instrument Classification | Accuracy (11-class) | ~71% |
 | Tag Prediction | mAP@10 | ~0.68 |
+| Beat Generation (StableBeaT) | CLAP Prompt Score (avg) | ~0.44 |
+| Beat Generation | Inference time (RTX 4050) | ~1m 15s |
 
 ---
 
@@ -858,6 +909,9 @@ Environment variables (prefix: `AUTOMIX_`):
 - [ ] Energy-based track matching
 - [ ] Playlist-level intelligent mixing
 - [ ] Reinforcement learning DJ transitions
+- [ ] Trap-specialized CLAP model for improved tagging
+- [ ] StableBeaT fine-tuning on underrepresented styles (boom bap, high-energy)
+- [ ] SpecGrad-style noise conditioning for beat generation
 - [ ] Mobile app (React Native)
 - [ ] Cloud deployment (AWS/GCP)
 
@@ -865,21 +919,19 @@ Environment variables (prefix: `AUTOMIX_`):
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) for details.
+MIT License — see `LICENSE` for details.
 
 ---
 
 ## Acknowledgments
 
-- [librosa](https://librosa.org/) - Audio analysis library
-- [TensorFlow](https://tensorflow.org/) - Machine learning framework
-- [FastAPI](https://fastapi.tiangolo.com/) - Modern web framework
-- [GTZAN Dataset](https://www.kaggle.com/andradaolteanu/gtzan-dataset-music-genre-classification) - Genre classification
-- [NSynth Dataset](https://magenta.tensorflow.org/nsynth) - Instrument sounds
-- [MagnaTagATune](https://mirg.city.ac.uk/codeapps/the-magnatagatune-dataset) - Music tagging
-
----
-
-<p align="center">
-  <strong>Built with 🎧 by AutoMixAI Team</strong>
-</p>
+- [librosa](https://librosa.org) — Audio analysis library
+- [TensorFlow](https://tensorflow.org) — Machine learning framework
+- [FastAPI](https://fastapi.tiangolo.com) — Modern web framework
+- [Stable Audio Open 1.0](https://huggingface.co/stabilityai/stable-audio-open-1.0) — Generative audio foundation model
+- [LoRAW](https://github.com/NeuralNotW0rk/LoRAW) — LoRA fine-tuning pipeline for Stable Audio Open
+- [Stable Audio Tools](https://github.com/Stability-AI/stable-audio-tools) — Official Stability AI audio framework
+- [Essentia](https://essentia.upf.edu/models.html) — Music feature extraction
+- [GTZAN Dataset](https://www.kaggle.com/datasets/andradaolteanu/gtzan-dataset-music-genre-classification) — Genre classification
+- [NSynth Dataset](https://magenta.tensorflow.org/datasets/nsynth) — Instrument sounds
+- [MagnaTagATune](https://mirg.city.ac.uk/codeapps/the-magnatagatune-dataset) — Music tagging
