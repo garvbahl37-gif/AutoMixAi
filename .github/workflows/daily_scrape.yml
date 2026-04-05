@@ -2,8 +2,8 @@ name: Daily Song Scraper
 
 on:
   schedule:
-    - cron: '0 2 * * *'  # runs every day at 2am UTC
-  workflow_dispatch:       # allows manual trigger from GitHub UI
+    - cron: '0 2 * * *'
+  workflow_dispatch:
 
 jobs:
   scrape:
@@ -23,49 +23,69 @@ jobs:
 
       - name: Install Python dependencies
         run: |
-          pip install yt-dlp pydub scipy numpy sqlalchemy sqlalchemy-utils tenacity six
+          pip install yt-dlp pydub scipy numpy sqlalchemy sqlalchemy-utils tenacity six huggingface_hub
 
-      - name: Pull latest fingerprints.db from HuggingFace
+      - name: Verify files exist
+        run: |
+          echo "=== Workspace ==="
+          ls -la
+          echo "=== Dejavu folder ==="
+          ls -la dejavu/
+
+      - name: Pull DB and progress from HuggingFace
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_SPACE: ${{ secrets.HF_SPACE }}
         run: |
-          pip install huggingface_hub
-          python - <<EOF
-          from huggingface_hub import HfApi
-          import os
-          api = HfApi()
-          try:
-              api.hf_hub_download(
-                  repo_id=os.environ["HF_SPACE"],
-                  filename="fingerprints.db",
-                  repo_type="space",
-                  token=os.environ["HF_TOKEN"],
-                  local_dir="."
-              )
-              print("✅ Pulled existing fingerprints.db")
-          except Exception as e:
-              print(f"⚠️ No existing DB found, starting fresh: {e}")
+          python - <<'EOF'
+          from huggingface_hub import hf_hub_download
+          import os, shutil
+
+          token = os.environ["HF_TOKEN"]
+          space = os.environ["HF_SPACE"]
+
+          for filename in ["fingerprints.db", "scraper_progress.json"]:
+              try:
+                  path = hf_hub_download(
+                      repo_id=space,
+                      filename=filename,
+                      repo_type="space",
+                      token=token,
+                  )
+                  shutil.copy(path, f"./{filename}")
+                  print(f"✅ Pulled {filename}")
+              except Exception as e:
+                  print(f"⚠️ {filename} not found, starting fresh: {e}")
           EOF
 
       - name: Run scraper
-        run: python scraper.py
+        run: |
+          cd $GITHUB_WORKSPACE
+          python scraper.py
 
-      - name: Push updated fingerprints.db to HuggingFace
+      - name: Push DB and progress to HuggingFace
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_SPACE: ${{ secrets.HF_SPACE }}
         run: |
-          python - <<EOF
+          python - <<'EOF'
           from huggingface_hub import HfApi
           import os
+
           api = HfApi()
-          api.upload_file(
-              path_or_fileobj="fingerprints.db",
-              path_in_repo="fingerprints.db",
-              repo_id=os.environ["HF_SPACE"],
-              repo_type="space",
-              token=os.environ["HF_TOKEN"]
-          )
-          print("✅ Pushed fingerprints.db to HuggingFace!")
+          token = os.environ["HF_TOKEN"]
+          space = os.environ["HF_SPACE"]
+
+          for filename in ["fingerprints.db", "scraper_progress.json"]:
+              if os.path.exists(filename):
+                  api.upload_file(
+                      path_or_fileobj=filename,
+                      path_in_repo=filename,
+                      repo_id=space,
+                      repo_type="space",
+                      token=token
+                  )
+                  print(f"✅ Pushed {filename}")
+              else:
+                  print(f"⚠️ {filename} not found, skipping")
           EOF
