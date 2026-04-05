@@ -1,0 +1,44 @@
+- name: Pull DB and progress from HuggingFace
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_SPACE: ${{ secrets.HF_SPACE }}
+        run: |
+          pip install huggingface_hub
+          python - <<EOF
+          from huggingface_hub import HfApi, hf_hub_download
+          import os
+          api = HfApi()
+          for filename in ["fingerprints.db", "scraper_progress.json"]:
+              try:
+                  api.hf_hub_download(
+                      repo_id=os.environ["HF_SPACE"],
+                      filename=filename,
+                      repo_type="space",
+                      token=os.environ["HF_TOKEN"],
+                      local_dir="."
+                  )
+                  print(f"✅ Pulled {filename}")
+              except Exception as e:
+                  print(f"⚠️ {filename} not found, starting fresh: {e}")
+          EOF
+
+      - name: Push DB and progress to HuggingFace
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_SPACE: ${{ secrets.HF_SPACE }}
+        run: |
+          python - <<EOF
+          from huggingface_hub import HfApi
+          import os
+          api = HfApi()
+          for filename in ["fingerprints.db", "scraper_progress.json"]:
+              if os.path.exists(filename):
+                  api.upload_file(
+                      path_or_fileobj=filename,
+                      path_in_repo=filename,
+                      repo_id=os.environ["HF_SPACE"],
+                      repo_type="space",
+                      token=os.environ["HF_TOKEN"]
+                  )
+                  print(f"✅ Pushed {filename}")
+          EOF
