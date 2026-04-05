@@ -60,7 +60,12 @@ jobs:
 
       - name: Run scraper
         run: |
-          cd $GITHUB_WORKSPACE
+          echo "=== Finding scraper.py ==="
+          find . -name "scraper.py" -type f
+          echo "=== Running ==="
+          SCRAPER=$(find . -name "scraper.py" -type f | head -1)
+          echo "Found at: $SCRAPER"
+          cd $(dirname $SCRAPER)
           python scraper.py
 
       - name: Push DB and progress to HuggingFace
