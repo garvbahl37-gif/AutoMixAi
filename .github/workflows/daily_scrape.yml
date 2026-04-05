@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Checkout GitHub repo
         uses: actions/checkout@v3
+        with:
+          ref: main
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -27,10 +29,12 @@ jobs:
 
       - name: Verify files exist
         run: |
-          echo "=== Workspace ==="
-          ls -la
+          echo "=== Current directory ==="
+          pwd
+          echo "=== All files in repo ==="
+          find . -not -path './.git/*' -type f
           echo "=== Dejavu folder ==="
-          ls -la dejavu/
+          ls -la dejavu/ || echo "dejavu/ NOT FOUND"
 
       - name: Pull DB and progress from HuggingFace
         env:
@@ -62,10 +66,15 @@ jobs:
         run: |
           echo "=== Finding scraper.py ==="
           find . -name "scraper.py" -type f
-          echo "=== Running ==="
           SCRAPER=$(find . -name "scraper.py" -type f | head -1)
-          echo "Found at: $SCRAPER"
-          cd $(dirname $SCRAPER)
+          if [ -z "$SCRAPER" ]; then
+            echo "❌ scraper.py NOT FOUND anywhere in repo"
+            exit 1
+          fi
+          echo "✅ Found at: $SCRAPER"
+          SCRAPER_DIR=$(dirname $SCRAPER)
+          echo "Running from directory: $SCRAPER_DIR"
+          cd $SCRAPER_DIR
           python scraper.py
 
       - name: Push DB and progress to HuggingFace
