@@ -1,0 +1,71 @@
+name: Daily Song Scraper
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # runs every day at 2am UTC
+  workflow_dispatch:       # allows manual trigger from GitHub UI
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout GitHub repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install system dependencies
+        run: sudo apt-get install -y ffmpeg
+
+      - name: Install Python dependencies
+        run: |
+          pip install yt-dlp pydub scipy numpy sqlalchemy sqlalchemy-utils tenacity six
+
+      - name: Pull latest fingerprints.db from HuggingFace
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_SPACE: ${{ secrets.HF_SPACE }}
+        run: |
+          pip install huggingface_hub
+          python - <<EOF
+          from huggingface_hub import HfApi
+          import os
+          api = HfApi()
+          try:
+              api.hf_hub_download(
+                  repo_id=os.environ["HF_SPACE"],
+                  filename="fingerprints.db",
+                  repo_type="space",
+                  token=os.environ["HF_TOKEN"],
+                  local_dir="."
+              )
+              print("✅ Pulled existing fingerprints.db")
+          except Exception as e:
+              print(f"⚠️ No existing DB found, starting fresh: {e}")
+          EOF
+
+      - name: Run scraper
+        run: python scraper.py
+
+      - name: Push updated fingerprints.db to HuggingFace
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_SPACE: ${{ secrets.HF_SPACE }}
+        run: |
+          python - <<EOF
+          from huggingface_hub import HfApi
+          import os
+          api = HfApi()
+          api.upload_file(
+              path_or_fileobj="fingerprints.db",
+              path_in_repo="fingerprints.db",
+              repo_id=os.environ["HF_SPACE"],
+              repo_type="space",
+              token=os.environ["HF_TOKEN"]
+          )
+          print("✅ Pushed fingerprints.db to HuggingFace!")
+          EOF
