@@ -79,97 +79,44 @@ export default function ShazamPage() {
 
   async function identify(blob) {
     try {
-      // Gradio 4.x uses a different API format
-      // First, upload the file
+      // Send audio directly to /recognize endpoint
       const formData = new FormData();
-      formData.append("files", blob, "audio.webm");
+      formData.append("file", blob, "audio.webm");
 
-      const uploadRes = await fetch(BACKEND_URL + "/upload", {
+      const res = await fetch(BACKEND_URL + "/recognize", {
         method: "POST",
         body: formData,
       });
 
-      if (!uploadRes.ok) {
+      if (!res.ok) {
         throw new Error("Failed to connect to recognition service. The server may be starting up - please try again in a moment.");
       }
 
-      let filePath;
-      try {
-        const uploadData = await uploadRes.json();
-        // Gradio returns array of file paths
-        filePath = uploadData[0];
-      } catch (e) {
-        throw new Error("Failed to process upload response");
-      }
-
-      // Call the Gradio predict endpoint
-      const res = await fetch(BACKEND_URL + "/run/predict", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          data: [{ path: filePath, meta: { _type: "gradio.FileData" } }],
-        }),
-      });
-
-      if (!res.ok) {
-        // Try alternative endpoint format for Gradio 4.x
-        const altRes = await fetch(BACKEND_URL + "/api/predict", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            data: [{ path: filePath, meta: { _type: "gradio.FileData" } }],
-            fn_index: 0,
-          }),
-        });
-        
-        if (!altRes.ok) {
-          const text = await res.text();
-          throw new Error("Server error (" + res.status + "): " + text);
-        }
-        
-        const altData = await altRes.json();
-        processResult(altData);
-        return;
-      }
-
       const data = await res.json();
-      processResult(data);
-      
+
+      if (data.status === "found") {
+        setResult({
+          status: "found",
+          title: data.title,
+          artist: data.artist || "Unknown Artist",
+          album: null,
+          release_date: null,
+          cover: null,
+          spotify: null,
+          apple_music: null,
+          score: data.confidence,
+          timecode: null,
+        });
+        setStatus("✅ Song identified!");
+      } else if (data.status === "not_found") {
+        setError("No match found. The song may not be in the fingerprint database yet.");
+        setStatus("");
+      } else {
+        setError(data.message || "Recognition failed. Please try again.");
+        setStatus("");
+      }
     } catch (e) {
       setError("Recognition failed: " + e.message);
-      setStatus("");
-    }
-  }
-
-  function processResult(data) {
-    // Gradio returns { data: [result] }
-    const resultText = data.data && data.data[0];
-
-    if (resultText && resultText.includes("Identified:")) {
-      // Parse: "🎵 Identified: **Song Name**\nConfidence: X"
-      const match = resultText.match(/Identified:\s*\*\*(.+?)\*\*/);
-      const confMatch = resultText.match(/Confidence:\s*([0-9.]+)/);
-      const songName = match ? match[1] : "Unknown";
-      const confidence = confMatch ? confMatch[1] : "N/A";
-
-      setResult({
-        status: "found",
-        title: songName,
-        artist: "Fingerprint Match",
-        album: null,
-        release_date: null,
-        cover: null,
-        spotify: null,
-        apple_music: null,
-        score: confidence,
-        timecode: null,
-      });
-      setStatus("✅ Song identified!");
-    } else if (resultText && resultText.includes("not recognized")) {
-      setError("No match found. The song may not be in the fingerprint database yet.");
-      setStatus("");
-    } else {
-      setError("No match found. Try again — hold your device closer to the music.");
       setStatus("");
     }
   }
