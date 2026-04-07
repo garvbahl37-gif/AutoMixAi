@@ -1,15 +1,17 @@
 import { useState } from "react";
-import { UploadCloud, BarChart2, Sliders, Wand2, Headphones, Sparkles, Menu, X } from "lucide-react";
+import { UploadCloud, BarChart2, Sliders, Wand2, Headphones, Sparkles, Menu, X, Mic } from "lucide-react";
 import UploadPage from "./pages/UploadPage";
 import AnalyzePage from "./pages/AnalyzePage";
 import MixPage from "./pages/MixPage";
 import BeatGeneratorPage from "./pages/BeatGeneratorPage";
+import ShazamPage from "./pages/ShazamPage";
 
 const NAV = [
   { id: "upload",   label: "Upload",    Icon: UploadCloud, desc: "Import audio files" },
   { id: "analyze",  label: "Analyze",   Icon: BarChart2,   desc: "AI audio analysis" },
   { id: "mix",      label: "Mix",       Icon: Sliders,     desc: "DJ mixing engine" },
   { id: "generate", label: "Generator", Icon: Wand2,       desc: "Beat synthesis" },
+  { id: "shazam",   label: "Shazam",    Icon: Mic,         desc: "Song recognition" },
 ];
 
 export default function App() {
@@ -120,6 +122,9 @@ export default function App() {
         )}
         {page === "generate" && (
           <BeatGeneratorPage />
+        )}
+        {page === "shazam" && (
+          <ShazamPage />
         )}
       </main>
 
