@@ -2,22 +2,25 @@
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_SPACE: ${{ secrets.HF_SPACE }}
+          SCRAPER_DIR: ${{ github.workspace }}/dejavu
         run: |
-          pip install huggingface_hub
-          python - <<EOF
-          from huggingface_hub import HfApi, hf_hub_download
-          import os
-          api = HfApi()
+          python - <<'EOF'
+          from huggingface_hub import hf_hub_download
+          import os, shutil
+          token = os.environ["HF_TOKEN"]
+          space = os.environ["HF_SPACE"]
+          scraper_dir = os.environ["SCRAPER_DIR"]
+          os.makedirs(scraper_dir, exist_ok=True)
           for filename in ["fingerprints.db", "scraper_progress.json"]:
               try:
-                  api.hf_hub_download(
-                      repo_id=os.environ["HF_SPACE"],
+                  path = hf_hub_download(
+                      repo_id=space,
                       filename=filename,
                       repo_type="space",
-                      token=os.environ["HF_TOKEN"],
-                      local_dir="."
+                      token=token,
                   )
-                  print(f"✅ Pulled {filename}")
+                  shutil.copy(path, os.path.join(scraper_dir, filename))
+                  print(f"✅ Pulled {filename} → {scraper_dir}")
               except Exception as e:
                   print(f"⚠️ {filename} not found, starting fresh: {e}")
           EOF
@@ -26,19 +29,26 @@
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_SPACE: ${{ secrets.HF_SPACE }}
+          SCRAPER_DIR: ${{ github.workspace }}/dejavu
         run: |
-          python - <<EOF
+          python - <<'EOF'
           from huggingface_hub import HfApi
           import os
           api = HfApi()
+          token = os.environ["HF_TOKEN"]
+          space = os.environ["HF_SPACE"]
+          scraper_dir = os.environ["SCRAPER_DIR"]
           for filename in ["fingerprints.db", "scraper_progress.json"]:
-              if os.path.exists(filename):
+              filepath = os.path.join(scraper_dir, filename)
+              if os.path.exists(filepath):
                   api.upload_file(
-                      path_or_fileobj=filename,
+                      path_or_fileobj=filepath,
                       path_in_repo=filename,
-                      repo_id=os.environ["HF_SPACE"],
+                      repo_id=space,
                       repo_type="space",
-                      token=os.environ["HF_TOKEN"]
+                      token=token
                   )
                   print(f"✅ Pushed {filename}")
+              else:
+                  print(f"⚠️ {filepath} not found, skipping")
           EOF
