@@ -1,14 +1,11 @@
 name: Daily Song Scraper
-
 on:
   schedule:
     - cron: '0 2 * * *'
   workflow_dispatch:
-
 jobs:
   scrape:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout GitHub repo
         uses: actions/checkout@v3
@@ -40,14 +37,15 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_SPACE: ${{ secrets.HF_SPACE }}
+          SCRAPER_DIR: ${{ github.workspace }}/dejavu
         run: |
           python - <<'EOF'
           from huggingface_hub import hf_hub_download
           import os, shutil
-
           token = os.environ["HF_TOKEN"]
           space = os.environ["HF_SPACE"]
-
+          scraper_dir = os.environ["SCRAPER_DIR"]
+          os.makedirs(scraper_dir, exist_ok=True)
           for filename in ["fingerprints.db", "scraper_progress.json"]:
               try:
                   path = hf_hub_download(
@@ -56,44 +54,40 @@ jobs:
                       repo_type="space",
                       token=token,
                   )
-                  shutil.copy(path, f"./{filename}")
-                  print(f"✅ Pulled {filename}")
+                  shutil.copy(path, os.path.join(scraper_dir, filename))
+                  print(f"✅ Pulled {filename} → {scraper_dir}")
               except Exception as e:
                   print(f"⚠️ {filename} not found, starting fresh: {e}")
           EOF
 
       - name: Run scraper
+        env:
+          SCRAPER_DIR: ${{ github.workspace }}/dejavu
         run: |
-          echo "=== Finding scraper.py ==="
-          find . -name "scraper.py" -type f
-          SCRAPER=$(find . -name "scraper.py" -type f | head -1)
-          if [ -z "$SCRAPER" ]; then
-            echo "❌ scraper.py NOT FOUND anywhere in repo"
-            exit 1
-          fi
-          echo "✅ Found at: $SCRAPER"
-          SCRAPER_DIR=$(dirname $SCRAPER)
-          echo "Running from directory: $SCRAPER_DIR"
-          cd $SCRAPER_DIR
+          cd "$SCRAPER_DIR"
+          echo "=== Running from: $(pwd) ==="
+          echo "=== Files in scraper dir ==="
+          ls -la
           python scraper.py
 
       - name: Push DB and progress to HuggingFace
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_SPACE: ${{ secrets.HF_SPACE }}
+          SCRAPER_DIR: ${{ github.workspace }}/dejavu
         run: |
           python - <<'EOF'
           from huggingface_hub import HfApi
           import os
-
           api = HfApi()
           token = os.environ["HF_TOKEN"]
           space = os.environ["HF_SPACE"]
-
+          scraper_dir = os.environ["SCRAPER_DIR"]
           for filename in ["fingerprints.db", "scraper_progress.json"]:
-              if os.path.exists(filename):
+              filepath = os.path.join(scraper_dir, filename)
+              if os.path.exists(filepath):
                   api.upload_file(
-                      path_or_fileobj=filename,
+                      path_or_fileobj=filepath,
                       path_in_repo=filename,
                       repo_id=space,
                       repo_type="space",
@@ -101,5 +95,5 @@ jobs:
                   )
                   print(f"✅ Pushed {filename}")
               else:
-                  print(f"⚠️ {filename} not found, skipping")
+                  print(f"⚠️ {filepath} not found, skipping")
           EOF
