@@ -1,7 +1,10 @@
 import sys
-sys.path.insert(0, '.')
-import yt_dlp
 import os
+
+# Add parent directory to path so we can import dejavu
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+import yt_dlp
 import json
 from dejavu import Dejavu
 
