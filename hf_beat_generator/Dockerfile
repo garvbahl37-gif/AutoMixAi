@@ -1,15 +1,25 @@
-FROM python:3.11-slim
+FROM python:3.10-slim
 
+# System deps
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libsndfile1 \
+    libsndfile1 git \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app
+# Create non-root user (HF Spaces requirement)
+RUN useradd -m -u 1000 user
+USER user
+ENV HOME=/home/user \
+    PATH=/home/user/.local/bin:$PATH
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+WORKDIR /home/user/app
 
-COPY app.py .
+# Install Python deps (torch CPU first — GPU handled by HF runtime)
+COPY --chown=user requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir torch torchaudio --index-url https://download.pytorch.org/whl/cpu && \
+    pip install --no-cache-dir -r requirements.txt
+
+COPY --chown=user app.py .
 
 RUN mkdir -p /tmp/automixai_beats
 
