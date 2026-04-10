@@ -1167,34 +1167,38 @@ async def generate_beat_ai(request: GenerateAIRequest):
     output_id = generate_file_id()
     output_path = OUTPUT_DIR / f"{output_id}.wav"
 
-    headers = {}
+    headers = {
+        "Content-Type": "application/json",
+        "x-wait-for-model": "true",  # Wait for model to load instead of 503
+    }
     if HF_TOKEN:
         headers["Authorization"] = f"Bearer {HF_TOKEN}"
 
     payload = {
         "inputs": request.prompt,
-        "parameters": {
-            "max_new_tokens": request.duration * 50,  # ~50 tokens per second
-        },
     }
 
     try:
         print(f"MusicGen AI generating: '{request.prompt}' ({request.duration}s)")
-        async with httpx.AsyncClient(timeout=180) as client:
+        async with httpx.AsyncClient(timeout=300) as client:
             response = await client.post(
                 MUSICGEN_API_URL,
                 headers=headers,
                 json=payload,
             )
 
+        print(f"HF API response: status={response.status_code}, content-type={response.headers.get('content-type', 'unknown')}, size={len(response.content)} bytes")
+
         if response.status_code == 503:
-            # Model is loading
+            error_data = response.json() if response.headers.get("content-type", "").startswith("application/json") else {}
+            wait_time = error_data.get("estimated_time", 30)
             raise HTTPException(
                 status_code=503,
-                detail="MusicGen model is loading, please try again in ~30 seconds."
+                detail=f"MusicGen model is loading, please try again in ~{int(wait_time)} seconds."
             )
         if response.status_code != 200:
-            error_msg = response.text[:200]
+            error_msg = response.text[:500]
+            print(f"HF API error: {error_msg}")
             raise HTTPException(
                 status_code=502,
                 detail=f"HF Inference API error ({response.status_code}): {error_msg}"
