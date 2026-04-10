@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import {
   Wand2, Play, Pause, Download, Grid3x3, RefreshCw,
   Zap, Sparkles, Music, Hash, Clock, Layers, Cpu, Brain,
-  Sliders, Thermometer, Target
+  Sliders
 } from "lucide-react";
 import WaveSurfer from "wavesurfer.js";
 import { api } from "../api";
@@ -293,8 +293,6 @@ export default function BeatGeneratorPage() {
 
   // AI mode controls
   const [duration, setDuration] = useState(10);
-  const [temperature, setTemperature] = useState(1.0);
-  const [guidanceScale, setGuidanceScale] = useState(3.0);
 
   // Synth mode controls
   const [bars, setBars] = useState(4);
@@ -315,7 +313,7 @@ export default function BeatGeneratorPage() {
 
     try {
       if (mode === "ai") {
-        const data = await api.generateBeatAI(prompt, duration, temperature, guidanceScale);
+        const data = await api.generateBeatAI(prompt, duration);
         setResult({ ...data, mode: "ai" });
         setOutputUrl(api.getBeatOutputUrl(data.output_file_id));
       } else {
@@ -494,16 +492,6 @@ export default function BeatGeneratorPage() {
                   min={3} max={30} step={1} unit="s"
                   icon={Clock} color="#10b981"
                 />
-                <SliderControl
-                  label="Temperature" value={temperature} onChange={setTemperature}
-                  min={0.5} max={1.5} step={0.1}
-                  icon={Thermometer} color="#f59e0b"
-                />
-                <SliderControl
-                  label="Guidance" value={guidanceScale} onChange={setGuidanceScale}
-                  min={1.0} max={10.0} step={0.5}
-                  icon={Target} color="#8b5cf6"
-                />
 
                 <div style={{
                   marginTop: 8, padding: "10px 14px",
@@ -512,8 +500,8 @@ export default function BeatGeneratorPage() {
                   border: "1px solid var(--border-color)",
                 }}>
                   <p style={{ fontSize: "0.72rem", color: "var(--text-dim)", lineHeight: 1.6 }}>
-                    <strong>Temperature:</strong> Low = predictable, High = creative<br />
-                    <strong>Guidance:</strong> Low = free, High = strictly follows prompt
+                    Powered by <strong>Meta MusicGen</strong> via HuggingFace Inference API (free GPU).<br />
+                    Generation takes ~30-90 seconds depending on duration.
                   </p>
                 </div>
               </div>

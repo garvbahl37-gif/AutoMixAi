@@ -1109,7 +1109,7 @@ async def mix_tracks(request: MixRequest):
     )
 
 
-# ── Generate ─────────────────────────────────────────────────────────────────
+# ── Generate (Procedural Synth) ──────────────────────────────────────────────
 
 @app.post("/generate", response_model=GenerateBeatResponse)
 async def generate_beat_route(request: GenerateBeatRequest):
@@ -1141,6 +1141,95 @@ async def generate_beat_route(request: GenerateBeatRequest):
             hihat_o=pattern_raw.get("hihat_o", [0]*16),
             clap=pattern_raw.get("clap", [0]*16),
         ),
+    )
+
+
+# ── Generate AI (MusicGen via HF Inference API) ─────────────────────────────
+
+HF_TOKEN = os.environ.get("HF_TOKEN", "")
+MUSICGEN_API_URL = "https://api-inference.huggingface.co/models/facebook/musicgen-small"
+
+class GenerateAIRequest(BaseModel):
+    prompt: str = Field(..., min_length=3, max_length=500)
+    duration: int = Field(default=10, ge=3, le=30)
+
+class GenerateAIResponse(BaseModel):
+    output_file_id: str
+    prompt: str
+    duration: float
+    model: str = "facebook/musicgen-small"
+    sample_rate: int = 32000
+    message: str = "AI beat generated successfully."
+
+@app.post("/generate-ai", response_model=GenerateAIResponse)
+async def generate_beat_ai(request: GenerateAIRequest):
+    """Generate a beat using Meta's MusicGen via HuggingFace Inference API (free GPU)."""
+    output_id = generate_file_id()
+    output_path = OUTPUT_DIR / f"{output_id}.wav"
+
+    headers = {}
+    if HF_TOKEN:
+        headers["Authorization"] = f"Bearer {HF_TOKEN}"
+
+    payload = {
+        "inputs": request.prompt,
+        "parameters": {
+            "max_new_tokens": request.duration * 50,  # ~50 tokens per second
+        },
+    }
+
+    try:
+        print(f"MusicGen AI generating: '{request.prompt}' ({request.duration}s)")
+        async with httpx.AsyncClient(timeout=180) as client:
+            response = await client.post(
+                MUSICGEN_API_URL,
+                headers=headers,
+                json=payload,
+            )
+
+        if response.status_code == 503:
+            # Model is loading
+            raise HTTPException(
+                status_code=503,
+                detail="MusicGen model is loading, please try again in ~30 seconds."
+            )
+        if response.status_code != 200:
+            error_msg = response.text[:200]
+            raise HTTPException(
+                status_code=502,
+                detail=f"HF Inference API error ({response.status_code}): {error_msg}"
+            )
+
+        # Response is raw audio bytes (FLAC format)
+        audio_bytes = response.content
+
+        # Save the raw audio first
+        temp_path = str(output_path).replace(".wav", "_raw.flac")
+        with open(temp_path, "wb") as f:
+            f.write(audio_bytes)
+
+        # Convert to WAV using librosa
+        y, sr = librosa.load(temp_path, sr=None, mono=True)
+        sf.write(str(output_path), y, sr, subtype="PCM_16")
+
+        # Clean up temp
+        os.remove(temp_path)
+
+        actual_duration = round(len(y) / sr, 2)
+        print(f"MusicGen AI complete: {actual_duration}s")
+
+    except HTTPException:
+        raise
+    except Exception as exc:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"AI generation failed: {str(exc)}") from exc
+
+    return GenerateAIResponse(
+        output_file_id=output_id,
+        prompt=request.prompt,
+        duration=actual_duration,
+        sample_rate=int(sr),
     )
 
 

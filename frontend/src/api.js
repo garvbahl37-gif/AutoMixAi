@@ -8,7 +8,6 @@
  */
 
 const HF_SPACE_URL = "https://bharatverse11-automixbackend.hf.space";
-const HF_BEAT_URL = "https://bharatverse11-automixai-beat-generator.hf.space";
 const LOCAL_URL = "http://localhost:8002";
 
 // Auto-detect: use HF Space in production, local in dev
@@ -114,28 +113,17 @@ export const api = {
   },
 
   /**
-   * AI Beat Generation via MusicGen (separate HF Space).
+   * AI Beat Generation via MusicGen (HF Inference API, free GPU).
+   * Calls /generate-ai on the main backend.
    * @param {string} prompt
    * @param {number} duration - seconds (3-30)
-   * @param {number} temperature - creativity (0.5-1.5)
-   * @param {number} guidanceScale - prompt adherence (1.0-10.0)
    * @returns {Promise<{output_file_id, prompt, duration, model, sample_rate, message}>}
    */
-  async generateBeatAI(prompt, duration = 10, temperature = 1.0, guidanceScale = 3.0) {
-    const beatBase =
-      window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-        ? LOCAL_URL
-        : HF_BEAT_URL;
-
-    const res = await fetch(`${beatBase}/generate`, {
+  async generateBeatAI(prompt, duration = 10) {
+    const res = await fetch(`${API_BASE}/generate-ai`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        prompt,
-        duration,
-        temperature,
-        guidance_scale: guidanceScale,
-      }),
+      body: JSON.stringify({ prompt, duration }),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
@@ -150,10 +138,6 @@ export const api = {
    * @returns {string}
    */
   getBeatOutputUrl(fileId) {
-    const beatBase =
-      window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-        ? LOCAL_URL
-        : HF_BEAT_URL;
-    return `${beatBase}/output/${fileId}`;
+    return `${API_BASE}/output/${fileId}`;
   },
 };
