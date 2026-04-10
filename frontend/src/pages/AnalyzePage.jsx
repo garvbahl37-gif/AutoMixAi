@@ -17,7 +17,20 @@ const GENRE_COLORS = {
 };
 
 const MOOD_CONFIG = {
+  angry: { color: "#ef4444", bg: "rgba(239, 68, 68, 0.1)", icon: Zap },
+  dark: { color: "#6366f1", bg: "rgba(99, 102, 241, 0.1)", icon: Activity },
   energetic: { color: "#f59e0b", bg: "rgba(245, 158, 11, 0.1)", icon: Zap },
+  epic: { color: "#8b5cf6", bg: "rgba(139, 92, 246, 0.1)", icon: TrendingUp },
+  euphoric: { color: "#ec4899", bg: "rgba(236, 72, 153, 0.1)", icon: Zap },
+  happy: { color: "#22c55e", bg: "rgba(34, 197, 94, 0.1)", icon: Activity },
+  mysterious: { color: "#6d28d9", bg: "rgba(109, 40, 217, 0.1)", icon: Activity },
+  relaxing: { color: "#10b981", bg: "rgba(16, 185, 129, 0.1)", icon: Activity },
+  romantic: { color: "#f43f5e", bg: "rgba(244, 63, 94, 0.1)", icon: Activity },
+  sad: { color: "#3b82f6", bg: "rgba(59, 130, 246, 0.1)", icon: Activity },
+  scary: { color: "#dc2626", bg: "rgba(220, 38, 38, 0.1)", icon: TrendingUp },
+  glamorous: { color: "#d946ef", bg: "rgba(217, 70, 239, 0.1)", icon: Activity },
+  uplifting: { color: "#14b8a6", bg: "rgba(20, 184, 166, 0.1)", icon: TrendingUp },
+  sentimental: { color: "#a855f7", bg: "rgba(168, 85, 247, 0.1)", icon: Activity },
   calm: { color: "#10b981", bg: "rgba(16, 185, 129, 0.1)", icon: Activity },
   melancholic: { color: "#a855f7", bg: "rgba(168, 85, 247, 0.1)", icon: Activity },
   intense: { color: "#ef4444", bg: "rgba(239, 68, 68, 0.1)", icon: TrendingUp },
