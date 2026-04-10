@@ -41,6 +41,8 @@ import librosa
 import soundfile as sf
 import scipy.signal
 import pyloudnorm as pyln
+import torch
+from transformers import pipeline as hf_pipeline, AutoFeatureExtractor, AutoModelForAudioClassification
 
 from fastapi import FastAPI, File, UploadFile, HTTPException, Form
 from fastapi.middleware.cors import CORSMiddleware
@@ -475,49 +477,135 @@ def create_advanced_mix(
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# GENRE ESTIMATION (Lightweight, no TensorFlow)
+# ML-POWERED AUDIO CLASSIFICATION (Genre, Mood, Vocals)
+# Uses HuggingFace transformer models for accurate classification
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def estimate_genre(y: np.ndarray, sr: int) -> dict:
-    """Simple spectral-based genre estimation (no ML model needed)."""
-    spectral_centroid = float(np.mean(librosa.feature.spectral_centroid(y=y, sr=sr)))
-    spectral_rolloff = float(np.mean(librosa.feature.spectral_rolloff(y=y, sr=sr)))
-    rms = float(np.mean(librosa.feature.rms(y=y)))
-    zcr = float(np.mean(librosa.feature.zero_crossing_rate(y=y)))
-    tempo, _ = librosa.beat.beat_track(y=y, sr=sr)
-    bpm = float(np.asarray(tempo).flat[0])
+# Model IDs
+GENRE_MODEL_ID = "dima806/music_genres_classification"      # wav2vec2, GTZAN 10 genres
+MOOD_MODEL_ID = "StanislavKo28/music_moods_classification"  # wav2vec2, 14 moods
 
-    # Simple rule-based estimation
-    if bpm > 155:
-        genre = "drum and bass" if spectral_centroid > 3000 else "metal"
-    elif bpm > 135:
-        genre = "trap" if rms > 0.08 else "trance"
-    elif bpm > 118:
-        if spectral_centroid > 3500:
-            genre = "edm"
-        elif zcr > 0.1:
-            genre = "rock"
-        else:
-            genre = "house"
-    elif bpm > 95:
-        if spectral_centroid > 3000:
-            genre = "pop"
-        elif rms < 0.04:
-            genre = "jazz"
-        else:
-            genre = "hiphop"
-    elif bpm > 70:
-        genre = "reggae" if zcr < 0.06 else "blues"
-    else:
-        genre = "ambient"
+# Lazy-loaded classifiers (loaded on first use to speed up startup)
+_genre_classifier = None
+_mood_classifier = None
 
-    return {
-        "genre": genre,
-        "confidence": 0.6,
-        "top3": [
-            {"genre": genre, "confidence": 0.6},
-        ],
-    }
+def _get_genre_classifier():
+    """Lazy-load the genre classification pipeline."""
+    global _genre_classifier
+    if _genre_classifier is None:
+        print(f"Loading genre model: {GENRE_MODEL_ID}")
+        _genre_classifier = hf_pipeline(
+            "audio-classification",
+            model=GENRE_MODEL_ID,
+            device=-1,  # CPU
+        )
+        print("Genre model loaded.")
+    return _genre_classifier
+
+def _get_mood_classifier():
+    """Lazy-load the mood classification pipeline."""
+    global _mood_classifier
+    if _mood_classifier is None:
+        print(f"Loading mood model: {MOOD_MODEL_ID}")
+        _mood_classifier = hf_pipeline(
+            "audio-classification",
+            model=MOOD_MODEL_ID,
+            device=-1,  # CPU
+        )
+        print("Mood model loaded.")
+    return _mood_classifier
+
+
+def classify_genre(file_path: str) -> dict:
+    """
+    Classify music genre using dima806/music_genres_classification.
+    Returns top genre + confidence + top 3 predictions.
+    Genres: blues, classical, country, disco, hiphop, jazz, metal, pop, reggae, rock
+    """
+    try:
+        classifier = _get_genre_classifier()
+        results = classifier(file_path, top_k=5)
+        top = results[0]
+        top3 = [
+            {"genre": r["label"], "confidence": round(r["score"], 4)}
+            for r in results[:3]
+        ]
+        return {
+            "genre": top["label"],
+            "confidence": round(top["score"], 4),
+            "top3": top3,
+        }
+    except Exception as e:
+        print(f"Genre classification error: {e}")
+        return {"genre": "unknown", "confidence": 0.0, "top3": []}
+
+
+def classify_mood(file_path: str) -> dict:
+    """
+    Classify music mood using StanislavKo28/music_moods_classification.
+    Returns top mood + confidence.
+    Moods: angry, dark, energetic, epic, euphoric, happy, mysterious,
+           relaxing, romantic, sad, scary, glamorous, uplifting, sentimental
+    """
+    try:
+        classifier = _get_mood_classifier()
+        results = classifier(file_path, top_k=5)
+        top = results[0]
+        top3 = [
+            {"mood": r["label"], "confidence": round(r["score"], 4)}
+            for r in results[:3]
+        ]
+        return {
+            "mood": top["label"],
+            "confidence": round(top["score"], 4),
+            "top3": top3,
+        }
+    except Exception as e:
+        print(f"Mood classification error: {e}")
+        return {"mood": "neutral", "confidence": 0.0, "top3": []}
+
+
+def detect_vocals(y: np.ndarray, sr: int) -> dict:
+    """
+    Detect whether the audio has vocals using harmonic/percussive separation.
+    If the harmonic component has strong mid-frequency energy (1-4kHz vocal range),
+    the track likely has vocals.
+    """
+    try:
+        # Separate harmonic and percussive components
+        y_harmonic, y_percussive = librosa.effects.hpss(y)
+
+        # Compute spectral centroid of harmonic part
+        harmonic_centroid = float(np.mean(librosa.feature.spectral_centroid(y=y_harmonic, sr=sr)))
+
+        # Compute energy in vocal frequency range (1-4kHz)
+        S = np.abs(librosa.stft(y_harmonic))
+        freqs = librosa.fft_frequencies(sr=sr)
+        vocal_mask = (freqs >= 1000) & (freqs <= 4000)
+        full_mask = freqs >= 80
+
+        vocal_energy = float(np.mean(S[vocal_mask, :])) if np.any(vocal_mask) else 0
+        total_energy = float(np.mean(S[full_mask, :])) if np.any(full_mask) else 1
+
+        vocal_ratio = vocal_energy / max(total_energy, 1e-8)
+
+        # Harmonic-to-percussive ratio
+        h_energy = float(np.mean(y_harmonic ** 2))
+        p_energy = float(np.mean(y_percussive ** 2))
+        hp_ratio = h_energy / max(p_energy, 1e-8)
+
+        # Decision: high vocal ratio + high harmonic content = vocals
+        has_vocals = vocal_ratio > 0.8 and hp_ratio > 1.2
+
+        return {
+            "has_vocals": has_vocals,
+            "vocal_ratio": round(vocal_ratio, 4),
+            "harmonic_percussive_ratio": round(hp_ratio, 4),
+            "label": "Vocal" if has_vocals else "Instrumental",
+        }
+    except Exception as e:
+        print(f"Vocal detection error: {e}")
+        return {"has_vocals": False, "vocal_ratio": 0.0, "harmonic_percussive_ratio": 0.0, "label": "Unknown"}
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -940,14 +1028,23 @@ async def analyze_audio(request: AnalyzeRequest):
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail=f"File '{request.file_id}' not found.")
 
-    y, sr = load_audio(str(file_path))
+    file_path_str = str(file_path)
+
+    # Load for librosa analysis
+    y, sr = load_audio(file_path_str)
     beat_times = detect_beats(y, sr)
     bpm = estimate_bpm_from_beats(beat_times) if len(beat_times) >= 2 else estimate_bpm_librosa(y, sr)
 
-    # Genre estimation
-    genre_result = estimate_genre(y, sr)
+    # ML Genre classification (transformer model)
+    genre_result = classify_genre(file_path_str)
 
-    # Energy
+    # ML Mood classification (transformer model)
+    mood_result = classify_mood(file_path_str)
+
+    # Vocal detection (spectral analysis)
+    vocal_result = detect_vocals(y, sr)
+
+    # Energy (RMS-based)
     rms = float(np.mean(librosa.feature.rms(y=y)))
     if rms > 0.12: energy = "high"
     elif rms > 0.06: energy = "medium"
@@ -961,6 +1058,9 @@ async def analyze_audio(request: AnalyzeRequest):
         sample_rate=sr,
         genre=genre_result["genre"],
         genre_confidence=genre_result["confidence"],
+        genre_top3=genre_result.get("top3", []),
+        mood=mood_result["mood"],
+        has_vocals=vocal_result["has_vocals"],
         energy=energy,
     )
 
