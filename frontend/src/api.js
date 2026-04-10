@@ -7,7 +7,7 @@
  * HF Space URL: Update HF_SPACE_URL after creating your HF Space.
  */
 
-const HF_SPACE_URL = "https://garvbahl37-automixai-backend.hf.space";
+const HF_SPACE_URL = "https://bharatverse11-automixbackend.hf.space";
 const LOCAL_URL = "http://localhost:8002";
 
 // Auto-detect: use HF Space in production, local in dev
