@@ -1,4 +1,21 @@
-const API_BASE = "http://localhost:8002";
+/**
+ * AutoMixAI API Client
+ *
+ * In production (Vercel), calls go to the HuggingFace Space backend.
+ * In development, calls go to the local backend on port 8002.
+ *
+ * HF Space URL: Update HF_SPACE_URL after creating your HF Space.
+ */
+
+const HF_SPACE_URL = "https://garvbahl37-automixai-backend.hf.space";
+const LOCAL_URL = "http://localhost:8002";
+
+// Auto-detect: use HF Space in production, local in dev
+const API_BASE =
+  window.location.hostname === "localhost" ||
+  window.location.hostname === "127.0.0.1"
+    ? LOCAL_URL
+    : HF_SPACE_URL;
 
 export const api = {
   /**
@@ -36,13 +53,15 @@ export const api = {
   },
 
   /**
-   * Generate a beat-synchronized mix from two tracks.
+   * Generate a beat-synchronized DJ mix from two tracks.
+   * Supports advanced DJ mixing controls.
    * @param {string} fileIdA
    * @param {string} fileIdB
    * @param {number} crossfadeDuration
+   * @param {object} options - { bassBoost, brightness, vocalBoost, panA, panB, eqTransition }
    * @returns {Promise<{output_file_id, duration, bpm_a, bpm_b, target_bpm, message}>}
    */
-  async mixTracks(fileIdA, fileIdB, crossfadeDuration = 5.0) {
+  async mixTracks(fileIdA, fileIdB, crossfadeDuration = 8.0, options = {}) {
     const res = await fetch(`${API_BASE}/mix`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -50,6 +69,12 @@ export const api = {
         file_id_a: fileIdA,
         file_id_b: fileIdB,
         crossfade_duration: crossfadeDuration,
+        bass_boost: options.bassBoost || 0.0,
+        brightness: options.brightness || 0.0,
+        vocal_boost: options.vocalBoost || 0.0,
+        pan_a: options.panA || 0.0,
+        pan_b: options.panB || 0.0,
+        eq_transition: options.eqTransition !== false,
       }),
     });
     if (!res.ok) {

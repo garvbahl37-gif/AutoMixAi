@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import {
   Music, Headphones, Download, Play, Pause, Sliders,
-  ArrowRight, Disc, Volume2, Clock, Activity
+  ArrowRight, Disc, Volume2, Clock, Activity, Zap, Waves, Mic2
 } from "lucide-react";
 import { api } from "../api";
 import WaveSurfer from "wavesurfer.js";
@@ -267,14 +267,87 @@ function DeckCard({ label, deckLetter, value, onChange, exclude, tracks }) {
   );
 }
 
+// EQ Knob component
+function EQSlider({ label, value, onChange, icon: Icon, color, min = 0, max = 1, step = 0.05 }) {
+  return (
+    <div style={{
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      gap: 8,
+      flex: 1,
+      minWidth: 80,
+    }}>
+      <div style={{
+        width: 32,
+        height: 32,
+        borderRadius: "50%",
+        background: value > 0
+          ? `linear-gradient(135deg, ${color}22, ${color}44)`
+          : "var(--bg-secondary)",
+        border: `2px solid ${value > 0 ? color : "var(--border)"}`,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        transition: "all 0.2s ease",
+      }}>
+        <Icon size={14} color={value > 0 ? color : "var(--text-dim)"} />
+      </div>
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={e => onChange(parseFloat(e.target.value))}
+        style={{
+          width: "100%",
+          accentColor: color,
+          height: 4,
+        }}
+      />
+      <div style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: 2,
+      }}>
+        <span style={{
+          fontSize: "0.72rem",
+          fontFamily: "var(--font-mono)",
+          color: value > 0 ? color : "var(--text-dim)",
+          fontWeight: 600,
+        }}>
+          {(value * 100).toFixed(0)}%
+        </span>
+        <span style={{
+          fontSize: "0.65rem",
+          color: "var(--text-dim)",
+          textTransform: "uppercase",
+          letterSpacing: "0.05em",
+        }}>
+          {label}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 // Main page
 export default function MixPage({ tracks }) {
   const [trackA, setTrackA] = useState(null);
   const [trackB, setTrackB] = useState(null);
-  const [crossfade, setCrossfade] = useState(5);
+  const [crossfade, setCrossfade] = useState(8);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
+
+  // Advanced DJ controls
+  const [bassBoost, setBassBoost] = useState(0);
+  const [brightness, setBrightness] = useState(0);
+  const [vocalBoost, setVocalBoost] = useState(0);
+  const [eqTransition, setEqTransition] = useState(true);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const canMix = trackA && trackB && !loading;
 
@@ -284,7 +357,12 @@ export default function MixPage({ tracks }) {
     setError(null);
     setResult(null);
     try {
-      const res = await api.mixTracks(trackA.file_id, trackB.file_id, crossfade);
+      const res = await api.mixTracks(trackA.file_id, trackB.file_id, crossfade, {
+        bassBoost,
+        brightness,
+        vocalBoost,
+        eqTransition,
+      });
       setResult(res);
     } catch (err) {
       setError(err.message);
@@ -295,10 +373,10 @@ export default function MixPage({ tracks }) {
   return (
     <div className="animate-in">
       <div className="page-header">
-        <h2><span className="gradient-text">Mix</span> Tracks</h2>
+        <h2><span className="gradient-text">DJ</span> Mix Engine</h2>
         <p>
-          Select two tracks and create a beat-synchronized DJ mix with automatic
-          tempo matching and crossfade transitions.
+          Professional DJ mixing with EQ crossfade transitions, LUFS mastering,
+          beat-sync tempo matching, and studio-grade audio processing.
         </p>
       </div>
 
@@ -363,6 +441,56 @@ export default function MixPage({ tracks }) {
 
               <span className="crossfade-value">{crossfade}s</span>
 
+              {/* EQ Transition toggle */}
+              <div
+                onClick={() => setEqTransition(!eqTransition)}
+                style={{
+                  marginTop: 12,
+                  padding: "8px 14px",
+                  borderRadius: "var(--radius-md)",
+                  background: eqTransition
+                    ? "linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(236, 72, 153, 0.15))"
+                    : "var(--bg-secondary)",
+                  border: `1px solid ${eqTransition ? "rgba(124, 58, 237, 0.35)" : "var(--border)"}`,
+                  cursor: "pointer",
+                  textAlign: "center",
+                  transition: "all 0.2s ease",
+                  userSelect: "none",
+                }}
+              >
+                <div style={{
+                  fontSize: "0.7rem",
+                  fontWeight: 600,
+                  color: eqTransition ? "var(--accent-primary)" : "var(--text-dim)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                }}>
+                  {eqTransition ? "⚡ EQ Crossfade" : "〰️ Standard"}
+                </div>
+                <div style={{
+                  fontSize: "0.6rem",
+                  color: "var(--text-dim)",
+                  marginTop: 2,
+                }}>
+                  {eqTransition ? "DJ bass-swap transition" : "Equal-power fade"}
+                </div>
+              </div>
+
+              {/* Advanced toggle */}
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => setShowAdvanced(!showAdvanced)}
+                style={{
+                  marginTop: 8,
+                  width: "100%",
+                  justifyContent: "center",
+                  fontSize: "0.72rem",
+                  color: "var(--text-muted)",
+                }}
+              >
+                {showAdvanced ? "Hide" : "Show"} EQ Controls
+              </button>
+
               {/* Volume icon */}
               <Volume2 size={18} color="var(--text-dim)" />
 
@@ -379,7 +507,7 @@ export default function MixPage({ tracks }) {
               >
                 {loading
                   ? <><span className="spinner" style={{ width: 15, height: 15 }} /> Mixing...</>
-                  : <><Sliders size={16} /> Create Mix</>
+                  : <><Sliders size={16} /> Create DJ Mix</>
                 }
               </button>
             </div>
@@ -393,6 +521,75 @@ export default function MixPage({ tracks }) {
               tracks={tracks}
             />
           </div>
+
+          {/* Advanced EQ Controls */}
+          {showAdvanced && (
+            <div className="card animate-in" style={{
+              marginTop: 20,
+              padding: 24,
+            }}>
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                marginBottom: 20,
+              }}>
+                <Waves size={16} color="var(--accent-primary)" />
+                <span style={{
+                  fontSize: "0.82rem",
+                  fontWeight: 600,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                  color: "var(--text-secondary)",
+                }}>
+                  DJ Equalizer
+                </span>
+              </div>
+
+              <div style={{
+                display: "flex",
+                gap: 16,
+                flexWrap: "wrap",
+              }}>
+                <EQSlider
+                  label="Bass"
+                  value={bassBoost}
+                  onChange={setBassBoost}
+                  icon={Volume2}
+                  color="#8b5cf6"
+                />
+                <EQSlider
+                  label="Bright"
+                  value={brightness}
+                  onChange={setBrightness}
+                  icon={Zap}
+                  color="#f59e0b"
+                />
+                <EQSlider
+                  label="Vocal"
+                  value={vocalBoost}
+                  onChange={setVocalBoost}
+                  icon={Mic2}
+                  color="#ec4899"
+                />
+              </div>
+
+              <div style={{
+                marginTop: 16,
+                padding: "10px 14px",
+                borderRadius: "var(--radius-sm)",
+                background: "rgba(139, 92, 246, 0.06)",
+                border: "1px solid rgba(139, 92, 246, 0.12)",
+                fontSize: "0.72rem",
+                color: "var(--text-muted)",
+                lineHeight: 1.5,
+              }}>
+                💡 <strong>Bass Boost</strong> — adds warmth below 150Hz &nbsp;·&nbsp;
+                <strong>Brightness</strong> — adds sparkle above 4kHz &nbsp;·&nbsp;
+                <strong>Vocal Boost</strong> — lifts 1–4kHz vocal range
+              </div>
+            </div>
+          )}
 
           {/* Error */}
           {error && (
@@ -423,9 +620,9 @@ export default function MixPage({ tracks }) {
                     <Headphones size={20} color="white" />
                   </div>
                   <div>
-                    <p style={{ fontWeight: 700, fontSize: "1.1rem" }}>Mix Ready</p>
+                    <p style={{ fontWeight: 700, fontSize: "1.1rem" }}>DJ Mix Ready</p>
                     <p style={{ fontSize: "0.78rem", color: "var(--text-muted)" }}>
-                      Beat-synchronized crossfade complete
+                      {eqTransition ? "EQ bass-swap crossfade" : "Equal-power crossfade"} · LUFS mastered to -14
                     </p>
                   </div>
                 </div>
@@ -446,14 +643,43 @@ export default function MixPage({ tracks }) {
                     <div className="stat-value" style={{ color: "var(--success)" }}>
                       {result.bpm_a.toFixed(1)}
                     </div>
-                    <div className="stat-label">Track A</div>
+                    <div className="stat-label">Track A BPM</div>
                   </div>
                   <div className="stat-card">
                     <div className="stat-value" style={{ color: "#ec4899" }}>
                       {result.bpm_b.toFixed(1)}
                     </div>
-                    <div className="stat-label">Track B</div>
+                    <div className="stat-label">Track B BPM</div>
                   </div>
+                </div>
+
+                {/* Processing badges */}
+                <div style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: 8,
+                  marginBottom: 20,
+                }}>
+                  {[
+                    "LUFS Normalized",
+                    "High-Pass 40Hz",
+                    "Beat-Synced",
+                    "Time-Stretched",
+                    eqTransition ? "EQ Bass Swap" : "Equal-Power",
+                    "Mastered -14 LUFS",
+                  ].map(tag => (
+                    <span key={tag} style={{
+                      padding: "4px 10px",
+                      borderRadius: "var(--radius-full)",
+                      background: "rgba(139, 92, 246, 0.1)",
+                      border: "1px solid rgba(139, 92, 246, 0.2)",
+                      fontSize: "0.68rem",
+                      color: "var(--accent-primary)",
+                      fontWeight: 500,
+                    }}>
+                      ✓ {tag}
+                    </span>
+                  ))}
                 </div>
 
                 {/* Waveform */}
@@ -467,7 +693,7 @@ export default function MixPage({ tracks }) {
                     download={`automix_${result.output_file_id}.wav`}
                     style={{ textDecoration: "none", width: "100%", justifyContent: "center" }}
                   >
-                    <Download size={18} /> Download Mix (WAV)
+                    <Download size={18} /> Download DJ Mix (WAV)
                   </a>
                 </div>
               </div>
