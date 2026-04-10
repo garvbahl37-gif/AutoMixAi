@@ -1147,7 +1147,7 @@ async def generate_beat_route(request: GenerateBeatRequest):
 # ── Generate AI (MusicGen via HF Inference API) ─────────────────────────────
 
 HF_TOKEN = os.environ.get("HF_TOKEN", "")
-MUSICGEN_API_URL = "https://api-inference.huggingface.co/models/facebook/musicgen-small"
+MUSICGEN_API_URL = "https://router.huggingface.co/hf-inference/models/facebook/musicgen-small"
 
 class GenerateAIRequest(BaseModel):
     prompt: str = Field(..., min_length=3, max_length=500)

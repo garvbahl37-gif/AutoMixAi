@@ -353,22 +353,6 @@ export default function BeatGeneratorPage() {
         }} />
       </div>
 
-      {/* AI Mode Badge */}
-      {mode === "ai" && (
-        <div className="animate-in" style={{
-          display: "flex", alignItems: "center", gap: 10,
-          padding: "10px 16px", marginBottom: 20,
-          background: "linear-gradient(90deg, rgba(139,92,246,0.08), rgba(236,72,153,0.06))",
-          border: "1px solid rgba(139,92,246,0.2)",
-          borderRadius: "var(--radius-md)",
-        }}>
-          <Brain size={16} color="var(--accent-primary)" />
-          <span style={{ fontSize: "0.82rem", color: "var(--text-secondary)" }}>
-            Powered by <strong style={{ color: "var(--accent-secondary)" }}>Meta MusicGen</strong> —
-            generates real melodies, bass, drums, and full beats from text
-          </span>
-        </div>
-      )}
 
       <div style={{
         display: "grid",
@@ -493,17 +477,6 @@ export default function BeatGeneratorPage() {
                   icon={Clock} color="#10b981"
                 />
 
-                <div style={{
-                  marginTop: 8, padding: "10px 14px",
-                  background: "rgba(255,255,255,0.02)",
-                  borderRadius: "var(--radius-sm)",
-                  border: "1px solid var(--border-color)",
-                }}>
-                  <p style={{ fontSize: "0.72rem", color: "var(--text-dim)", lineHeight: 1.6 }}>
-                    Powered by <strong>Meta MusicGen</strong> via HuggingFace Inference API (free GPU).<br />
-                    Generation takes ~30-90 seconds depending on duration.
-                  </p>
-                </div>
               </div>
             </>
           ) : (
