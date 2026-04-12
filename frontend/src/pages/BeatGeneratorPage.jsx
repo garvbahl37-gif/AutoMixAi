@@ -2,49 +2,26 @@ import { useState, useEffect, useRef } from "react";
 import {
   Wand2, Play, Pause, Download, Grid3x3, RefreshCw,
   Zap, Sparkles, Music, Hash, Clock, Layers, Cpu, Brain,
-  Sliders
+  Sliders, Settings, Gauge, Dice5
 } from "lucide-react";
 import WaveSurfer from "wavesurfer.js";
 import { api } from "../api";
 
+// ─── AI Gen Colab Backend ───────────────────────────────────────────────────
+const COLAB_API = "https://bustled-hertha-unprojective.ngrok-free.dev";
+
 // ─── Preset styles ──────────────────────────────────────────────────────────
 
 const AI_PRESETS = [
-  { label: "Trap Beat", prompt: "hard-hitting trap beat with 808 bass, rolling hi-hats, and dark melody", color: "#ef4444" },
-  { label: "Lo-Fi Chill", prompt: "smooth lo-fi hip hop beat with vinyl crackle, mellow piano, and soft drums", color: "#a855f7" },
-  { label: "EDM Drop", prompt: "energetic EDM beat with massive synth drop, punchy kick, and sidechained bass", color: "#06b6d4" },
-  { label: "Drill Beat", prompt: "UK drill beat with sliding 808 bass, fast hi-hats, and dark piano melody", color: "#dc2626" },
-  { label: "Boom Bap", prompt: "classic boom bap hip hop beat with heavy kick, crispy snare, and jazz sample", color: "#f59e0b" },
-  { label: "House Groove", prompt: "deep house beat with four on the floor kick, funky bassline, and vocal chops", color: "#10b981" },
-  { label: "Afrobeat", prompt: "afrobeat rhythm with percussion, groovy bass, and bright melody at 110 BPM", color: "#ec4899" },
-  { label: "Ambient Pad", prompt: "atmospheric ambient beat with ethereal pads, subtle percussion, and reverb", color: "#6366f1" },
-  { label: "Rock Drums", prompt: "powerful rock drum beat with heavy kick, crashing cymbals, and driving rhythm", color: "#f97316" },
-  { label: "R&B Smooth", prompt: "smooth R&B beat with soft 808s, snapping snare, and warm chords", color: "#14b8a6" },
-  { label: "Reggaeton", prompt: "reggaeton dembow beat with bouncy rhythm, percussive hits at 95 BPM", color: "#eab308" },
-  { label: "Phonk", prompt: "dark phonk beat with distorted 808, cowbell, and aggressive Memphis style", color: "#7c3aed" },
+  { label: "Cloud Trap", prompt: "A dark and melancholic cloud trap beat, with nostalgic piano, plucked bass and synth bells, at 110 BPM.", color: "#a855f7" },
+  { label: "Lo-Fi Jazz Rap", prompt: "A laid back lo-fi jazz rap at 85 BPM, featuring deep sub, plucked bass, and vocal chop, with chill and jazzy relaxed moods.", color: "#06b6d4" },
+  { label: "Cinematic Trap", prompt: "Melancholic trap beat at 105 BPM with shimmering synth bells and deep sub bass, minor chord progressions on piano, and airy vocal pads, evoking a cinematic and emotional atmosphere.", color: "#ef4444" },
+  { label: "Jazzy Chillhop", prompt: "A jazzy chillhop beat at 101 BPM featuring synth bells, vocal pad, and movie sample, evoking trap nostalgic and chill moods.", color: "#f59e0b" },
+  { label: "Seductive Trap", prompt: "Smooth and seductive at 115 BPM trap beat with electric guitar riffs, plucked bass, vocal adlibs, and warm synth pads. Relaxed, romantic, and sexy mood.", color: "#14b8a6" },
+  { label: "Moody Cloud", prompt: "A moody cloud trap beat, boomy bass, synth bells and melodic piano, evoking etherate mood at 100 BPM.", color: "#6366f1" },
+  { label: "Smooth R&B", prompt: "A smooth neo-soul R&B instrumental at 90 BPM in D major, featuring live bass, soft Rhodes keys, and warm analog drum grooves.", color: "#ec4899" },
 ];
 
-const SYNTH_PRESETS = [
-  { label: "Hip-Hop", prompt: "chill hip-hop beat with heavy bass and smooth hi-hats", color: "#a855f7" },
-  { label: "Trap", prompt: "dark trap beat with rolling hi-hats and 808 kicks", color: "#ef4444" },
-  { label: "House", prompt: "energetic house EDM beat at 128 BPM with big drops", color: "#06b6d4" },
-  { label: "Rock", prompt: "driving rock beat with punchy snare and fast hi-hats", color: "#f59e0b" },
-  { label: "Metal", prompt: "heavy metal beat with double kick and aggressive fills", color: "#dc2626" },
-  { label: "Jazz", prompt: "laid-back jazz swing beat at 95 BPM", color: "#10b981" },
-  { label: "Reggae", prompt: "one-drop reggae beat with off-beat rhythms at 80 BPM", color: "#84cc16" },
-  { label: "Drum & Bass", prompt: "fast drum and bass beat at 174 BPM with complex breaks", color: "#f97316" },
-];
-
-const BARS_OPTIONS = [2, 4, 8, 16];
-const DURATION_OPTIONS = [5, 10, 15, 20, 30];
-
-const GENRE_COLORS = {
-  hiphop: "#a855f7", trap: "#ef4444", edm: "#06b6d4",
-  rock: "#f59e0b", metal: "#dc2626", jazz: "#10b981",
-  reggae: "#84cc16", dnb: "#f97316", ambient: "#6366f1",
-  afrobeats: "#ec4899", funk: "#eab308", latin: "#14b8a6",
-  house: "#06b6d4",
-};
 
 // ─── Waveform player ────────────────────────────────────────────────────────
 
@@ -90,7 +67,7 @@ function BeatWaveform({ url }) {
   const formatTime = (s) => {
     const secs = Math.floor(s);
     const ms = Math.floor((s - secs) * 100);
-    return `${secs}.${ms.toString().padStart(2, '0')}`;
+    return `${secs}.${ms.toString().padStart(2, "0")}`;
   };
 
   return (
@@ -143,65 +120,6 @@ function BeatWaveform({ url }) {
   );
 }
 
-// ─── Drum pattern grid ──────────────────────────────────────────────────────
-
-const INSTRUMENTS = [
-  { key: "kick", label: "Kick", color: "#7c3aed" },
-  { key: "snare", label: "Snare", color: "#ec4899" },
-  { key: "hihat_c", label: "HH–C", color: "#06b6d4" },
-  { key: "hihat_o", label: "HH–O", color: "#0e7490" },
-  { key: "clap", label: "Clap", color: "#f59e0b" },
-];
-
-function DrumPatternGrid({ pattern }) {
-  if (!pattern) return null;
-  return (
-    <div style={{ overflowX: "auto" }}>
-      <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 520 }}>
-        <div style={{ display: "flex", paddingLeft: 64 }}>
-          {Array.from({ length: 16 }, (_, i) => (
-            <div key={i} style={{
-              flex: 1, textAlign: "center",
-              fontSize: "0.68rem",
-              color: i % 4 === 0 ? "var(--accent-secondary)" : "var(--text-dim)",
-              fontFamily: "var(--font-mono)",
-              fontWeight: i % 4 === 0 ? 700 : 400,
-              paddingBottom: 6,
-            }}>
-              {i % 4 === 0 ? i / 4 + 1 : "·"}
-            </div>
-          ))}
-        </div>
-        {INSTRUMENTS.map(({ key, label, color }) => {
-          const steps = pattern[key] || Array(16).fill(0);
-          return (
-            <div key={key} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{
-                width: 58, flexShrink: 0, fontSize: "0.72rem",
-                letterSpacing: "0.04em", color: "var(--text-muted)",
-                textAlign: "right", paddingRight: 8,
-                fontFamily: "var(--font-mono)", textTransform: "uppercase",
-                fontWeight: 500,
-              }}>{label}</span>
-              {steps.map((hit, i) => (
-                <div key={i} style={{
-                  flex: 1, height: 24, borderRadius: 4,
-                  background: hit
-                    ? `linear-gradient(135deg, ${color}, ${color}cc)`
-                    : i % 4 === 0 ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.02)",
-                  border: `1px solid ${hit ? `${color}aa` : i % 4 === 0 ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.03)"}`,
-                  boxShadow: hit ? `0 0 10px ${color}50, inset 0 1px 0 rgba(255,255,255,0.2)` : "none",
-                  transition: "all 0.15s ease",
-                }} />
-              ))}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 // ─── Slider component ───────────────────────────────────────────────────────
 
 function SliderControl({ label, value, onChange, min, max, step, icon: Icon, unit = "", color = "var(--accent-primary)" }) {
@@ -236,46 +154,22 @@ function SliderControl({ label, value, onChange, min, max, step, icon: Icon, uni
   );
 }
 
-// ─── Mode toggle ────────────────────────────────────────────────────────────
+// ─── Generation status indicator ────────────────────────────────────────────
 
-function ModeToggle({ mode, setMode }) {
+function GeneratingStatus({ statusMsg }) {
+  if (!statusMsg) return null;
   return (
     <div style={{
-      display: "flex", gap: 4,
-      background: "var(--bg-secondary)",
+      display: "flex", alignItems: "center", gap: 10,
+      padding: "12px 16px",
+      background: "rgba(139,92,246,0.08)",
+      border: "1px solid rgba(139,92,246,0.2)",
       borderRadius: "var(--radius-md)",
-      padding: 4,
-      border: "1px solid var(--border-color)",
+      fontSize: "0.82rem",
+      color: "var(--accent-secondary)",
     }}>
-      {[
-        { key: "ai", label: "AI MusicGen", icon: Brain, desc: "Deep learning" },
-        { key: "synth", label: "Drum Synth", icon: Cpu, desc: "Procedural" },
-      ].map(({ key, label, icon: Icon }) => (
-        <button
-          key={key}
-          onClick={() => setMode(key)}
-          style={{
-            flex: 1, display: "flex", alignItems: "center",
-            justifyContent: "center", gap: 8,
-            padding: "12px 16px",
-            borderRadius: "var(--radius-sm)",
-            border: "none",
-            background: mode === key
-              ? "linear-gradient(135deg, rgba(139,92,246,0.2), rgba(168,85,247,0.15))"
-              : "transparent",
-            color: mode === key ? "var(--accent-secondary)" : "var(--text-muted)",
-            cursor: "pointer",
-            fontSize: "0.85rem",
-            fontWeight: mode === key ? 700 : 500,
-            fontFamily: "var(--font-sans)",
-            transition: "all 0.2s ease",
-            boxShadow: mode === key ? "0 0 12px rgba(139,92,246,0.15)" : "none",
-          }}
-        >
-          <Icon size={16} />
-          {label}
-        </button>
-      ))}
+      <div className="spinner" style={{ width: 14, height: 14, flexShrink: 0 }} />
+      {statusMsg}
     </div>
   );
 }
@@ -283,19 +177,21 @@ function ModeToggle({ mode, setMode }) {
 // ─── Main page ──────────────────────────────────────────────────────────────
 
 export default function BeatGeneratorPage() {
-  const [mode, setMode] = useState("ai"); // "ai" | "synth"
+  const mode = "ai";
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
+  const [statusMsg, setStatusMsg] = useState("");
   const [error, setError] = useState(null);
   const [result, setResult] = useState(null);
   const [outputUrl, setOutputUrl] = useState(null);
   const [activePreset, setActivePreset] = useState(null);
 
   // AI mode controls
-  const [duration, setDuration] = useState(10);
+  const [duration, setDuration] = useState(30);
+  const [steps, setSteps] = useState(100);
+  const [cfgScale, setCfgScale] = useState(7.0);
+  const [seed, setSeed] = useState(-1);
 
-  // Synth mode controls
-  const [bars, setBars] = useState(4);
 
   const canGenerate = prompt.trim().length >= 3 && !loading;
 
@@ -304,55 +200,148 @@ export default function BeatGeneratorPage() {
     setActivePreset(p.label);
   };
 
+  const randomizeSeed = () => {
+    setSeed(Math.floor(Math.random() * 999999));
+  };
+
   const handleGenerate = async () => {
     if (!canGenerate) return;
     setLoading(true);
     setError(null);
     setResult(null);
     setOutputUrl(null);
+    setStatusMsg("");
 
     try {
       if (mode === "ai") {
-        const data = await api.generateBeatAI(prompt, duration);
-        setResult({ ...data, mode: "ai" });
-        setOutputUrl(api.getBeatOutputUrl(data.output_file_id));
-      } else {
-        const data = await api.generateBeat(prompt, bars);
-        setResult({ ...data, mode: "synth" });
-        setOutputUrl(api.getOutputUrl(data.output_file_id));
+        // ── AI Gen Colab backend (async job + polling) ──────────────────
+        // Step 1: Submit generation job
+        setStatusMsg("Submitting generation job to AI model…");
+
+        const payload = {
+          prompt: prompt,
+          steps: steps,
+          cfg_scale: cfgScale,
+          duration: duration,
+        };
+
+        const submitRes = await fetch(`${COLAB_API}/generate`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "ngrok-skip-browser-warning": "true",
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!submitRes.ok) {
+          const errData = await submitRes.json().catch(() => ({}));
+          throw new Error(errData.detail || errData.error || `Job submission failed (HTTP ${submitRes.status})`);
+        }
+
+        const submitData = await submitRes.json();
+        const jobId = submitData.job_id;
+
+        if (!jobId) {
+          throw new Error("Backend did not return a job_id");
+        }
+
+        // Step 2: Poll /result/{job_id} until status is 'done' or 'error'
+        setStatusMsg(`Generating ${duration}s beat with AI (${steps} steps, CFG ${cfgScale})…`);
+
+        let pollData = null;
+        const POLL_INTERVAL = 3000; // 3 seconds between polls
+        const MAX_POLL_TIME = 600000; // 10 minute max wait
+        const startTime = Date.now();
+
+        while (Date.now() - startTime < MAX_POLL_TIME) {
+          await new Promise(r => setTimeout(r, POLL_INTERVAL));
+
+          const elapsed = Math.floor((Date.now() - startTime) / 1000);
+          setStatusMsg(`Generating beat… ${elapsed}s elapsed (${steps} steps, CFG ${cfgScale})`);
+
+          const pollRes = await fetch(`${COLAB_API}/result/${jobId}`, {
+            headers: { "ngrok-skip-browser-warning": "true" },
+          });
+
+          if (!pollRes.ok) {
+            // Might be a transient error, keep polling
+            console.warn("Poll request failed, retrying…", pollRes.status);
+            continue;
+          }
+
+          pollData = await pollRes.json();
+
+          if (pollData.status === "done") {
+            break;
+          } else if (pollData.status === "error") {
+            throw new Error(pollData.error || "Generation failed on the server");
+          }
+          // status === "processing" / "pending" → keep polling
+        }
+
+        if (!pollData || pollData.status !== "done") {
+          throw new Error("Generation timed out — the model may be overloaded. Try again.");
+        }
+
+        // Step 3: Extract audio from the result
+        // Backend field is "audio" (base64-encoded WAV)
+        const audioB64 = pollData.audio || pollData.audio_base64;
+        if (audioB64) {
+          // Base64-encoded WAV audio
+          const byteChars = atob(audioB64);
+          const byteArray = new Uint8Array(byteChars.length);
+          for (let i = 0; i < byteChars.length; i++) {
+            byteArray[i] = byteChars.charCodeAt(i);
+          }
+          const blob = new Blob([byteArray], { type: "audio/wav" });
+          setOutputUrl(URL.createObjectURL(blob));
+        } else if (pollData.audio_url) {
+          // Direct URL to audio file
+          setOutputUrl(pollData.audio_url);
+        } else if (pollData.file_url) {
+          setOutputUrl(pollData.file_url);
+        } else if (pollData.file_id) {
+          // Fetch the audio file from the backend
+          const audioRes = await fetch(`${COLAB_API}/output/${pollData.file_id}`, {
+            headers: { "ngrok-skip-browser-warning": "true" },
+          });
+          const blob = await audioRes.blob();
+          setOutputUrl(URL.createObjectURL(blob));
+        } else {
+          throw new Error("Server returned 'done' but no audio data was found in the response");
+        }
+
+        setResult({
+          mode: "ai",
+          duration: pollData.duration || duration,
+          model: "AI Audio",
+          sample_rate: pollData.sample_rate || 44100,
+          steps: pollData.steps || steps,
+          cfg_scale: pollData.cfg_scale || cfgScale,
+          seed: pollData.seed ?? seed,
+        });
       }
     } catch (err) {
-      setError(err.message);
+      console.error("Generation error:", err);
+      setError(err.message || "An unexpected error occurred");
     }
+
     setLoading(false);
+    setStatusMsg("");
   };
 
-  const presets = mode === "ai" ? AI_PRESETS : SYNTH_PRESETS;
+  const presets = AI_PRESETS;
 
   return (
     <div className="animate-in">
       {/* Header */}
       <div className="page-header">
         <h2><span className="gradient-text">Beat</span> Generator</h2>
-        <p>
-          {mode === "ai"
-            ? "Generate studio-quality beats and music using Meta's MusicGen AI model."
-            : "Describe your drum pattern and let procedural synthesis create it instantly."}
+        <p style={{ fontSize: "0.95rem", opacity: 0.9 }}>
+          Generate studio-quality beats using our fine-tuned AI model.
         </p>
       </div>
-
-      {/* Mode Toggle */}
-      <div style={{ marginBottom: 24 }}>
-        <ModeToggle mode={mode} setMode={(m) => {
-          setMode(m);
-          setResult(null);
-          setOutputUrl(null);
-          setError(null);
-          setActivePreset(null);
-          setPrompt("");
-        }} />
-      </div>
-
 
       <div style={{
         display: "grid",
@@ -370,28 +359,22 @@ export default function BeatGeneratorPage() {
               <Wand2 size={18} color="var(--accent-secondary)" />
               <p className="section-label" style={{ marginBottom: 0 }}>Prompt</p>
             </div>
-            <textarea
+              <textarea
               value={prompt}
               onChange={e => { setPrompt(e.target.value); setActivePreset(null); }}
               onKeyDown={e => e.key === "Enter" && (e.metaKey || e.ctrlKey) && handleGenerate()}
-              placeholder={mode === "ai"
-                ? "e.g. hard-hitting trap beat with 808 bass and dark melody\ne.g. smooth lo-fi beat with vinyl crackle and piano\n\nTip: Press ⌘/Ctrl + Enter to generate"
-                : "e.g. chill hip-hop beat at 90 BPM with heavy bass\ne.g. dark trap banger with 808s and fast hi-hat rolls\n\nTip: Press ⌘/Ctrl + Enter to generate"
-              }
+              placeholder={"e.g. A dark and melancholic cloud trap beat with piano, plucked bass at 110 BPM\ne.g. Smooth R&B beat at 90 BPM with Rhodes keys and warm drums\n\nTip: Press ⌘/Ctrl + Enter to generate"}
               rows={5}
               maxLength={500}
               className="textarea"
-              style={{ lineHeight: 1.8, fontSize: "0.92rem" }}
+              style={{ lineHeight: 1.8, fontSize: "0.92rem", background: "rgba(255,255,255,0.015)" }}
             />
             <div style={{
               marginTop: 8, display: "flex",
               justifyContent: "space-between", alignItems: "center",
             }}>
               <span style={{ fontSize: "0.72rem", color: "var(--text-dim)" }}>
-                {mode === "ai"
-                  ? "Describe any style: melody, bass, drums, instruments, mood"
-                  : "Supports 20+ genres, mood, complexity, time signatures"
-                }
+                Include instruments, mood, BPM & key for best results
               </span>
               <span style={{
                 fontSize: "0.72rem", color: "var(--text-muted)",
@@ -422,31 +405,35 @@ export default function BeatGeneratorPage() {
                     key={p.label}
                     onClick={() => applyPreset(p)}
                     style={{
-                      background: active ? `${p.color}20` : "var(--bg-secondary)",
-                      border: `1px solid ${active ? `${p.color}60` : "var(--border-color)"}`,
+                      background: active 
+                        ? `linear-gradient(135deg, ${p.color}15, ${p.color}05)` 
+                        : "rgba(255,255,255,0.02)",
+                      border: `1px solid ${active ? `${p.color}50` : "rgba(255,255,255,0.06)"}`,
                       color: active ? p.color : "var(--text-secondary)",
-                      borderRadius: "var(--radius-md)",
-                      padding: "10px 12px",
-                      fontSize: "0.82rem",
+                      borderRadius: "var(--radius-full)",
+                      padding: "8px 14px",
+                      fontSize: "0.78rem",
                       fontWeight: 600,
                       cursor: "pointer",
                       fontFamily: "var(--font-sans)",
-                      transition: "all 0.15s ease",
-                      letterSpacing: "0.01em",
+                      transition: "all 0.2s ease",
                       whiteSpace: "nowrap",
                       overflow: "hidden",
                       textOverflow: "ellipsis",
+                      boxShadow: active ? `0 4px 12px ${p.color}10` : "none",
                     }}
                     onMouseEnter={e => {
                       if (!active) {
                         e.target.style.borderColor = `${p.color}40`;
                         e.target.style.color = p.color;
+                        e.target.style.background = `linear-gradient(135deg, ${p.color}10, transparent)`;
                       }
                     }}
                     onMouseLeave={e => {
                       if (!active) {
-                        e.target.style.borderColor = "var(--border-color)";
+                        e.target.style.borderColor = "rgba(255,255,255,0.06)";
                         e.target.style.color = "var(--text-secondary)";
+                        e.target.style.background = "rgba(255,255,255,0.02)";
                       }
                     }}
                   >
@@ -460,7 +447,7 @@ export default function BeatGeneratorPage() {
 
         {/* Right column: controls */}
         <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-          {mode === "ai" ? (
+          {true && (
             <>
               {/* AI Controls */}
               <div className="card" style={{ padding: 24 }}>
@@ -468,55 +455,34 @@ export default function BeatGeneratorPage() {
                   display: "flex", alignItems: "center", gap: 10, marginBottom: 20,
                 }}>
                   <Sliders size={18} color="var(--accent-secondary)" />
-                  <p className="section-label" style={{ marginBottom: 0 }}>AI Controls</p>
+                  <p className="section-label" style={{ marginBottom: 0 }}>Generation Controls</p>
                 </div>
 
                 <SliderControl
                   label="Duration" value={duration} onChange={setDuration}
-                  min={3} max={30} step={1} unit="s"
+                  min={10} max={47} step={1} unit="s"
                   icon={Clock} color="#10b981"
                 />
 
-              </div>
-            </>
-          ) : (
-            <>
-              {/* Synth Controls */}
-              <div className="card" style={{ padding: 24 }}>
-                <div style={{
-                  display: "flex", alignItems: "center", gap: 10, marginBottom: 16,
-                }}>
-                  <Hash size={18} color="var(--accent-secondary)" />
-                  <p className="section-label" style={{ marginBottom: 0 }}>Bars</p>
-                </div>
-                <div style={{
-                  display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10,
-                }}>
-                  {BARS_OPTIONS.map(b => (
-                    <button
-                      key={b}
-                      onClick={() => setBars(b)}
-                      style={{
-                        padding: "14px 0",
-                        borderRadius: "var(--radius-md)",
-                        border: `1px solid ${bars === b ? "rgba(139, 92, 246, 0.6)" : "var(--border-color)"}`,
-                        background: bars === b ? "rgba(139, 92, 246, 0.15)" : "var(--bg-secondary)",
-                        color: bars === b ? "var(--accent-secondary)" : "var(--text-secondary)",
-                        cursor: "pointer",
-                        fontWeight: 700,
-                        fontSize: "1rem",
-                        fontFamily: "var(--font-mono)",
-                        transition: "all 0.15s ease",
-                        boxShadow: bars === b ? "0 0 12px rgba(139, 92, 246, 0.2)" : "none",
-                      }}
-                    >
-                      {b}
-                    </button>
-                  ))}
-                </div>
+                <SliderControl
+                  label="Steps" value={steps} onChange={setSteps}
+                  min={50} max={250} step={10} unit=""
+                  icon={Gauge} color="#f59e0b"
+                />
+
+                <SliderControl
+                  label="CFG Scale" value={cfgScale} onChange={setCfgScale}
+                  min={1} max={15} step={0.5} unit=""
+                  icon={Settings} color="#a855f7"
+                />
+
+
               </div>
             </>
           )}
+
+          {/* Status message while loading */}
+          {loading && <GeneratingStatus statusMsg={statusMsg} />}
 
           {/* Generate button */}
           <button
@@ -525,111 +491,66 @@ export default function BeatGeneratorPage() {
             disabled={!canGenerate}
             style={{
               width: "100%", padding: "16px 0",
-              fontSize: "1rem", letterSpacing: "0.02em",
+              fontSize: "1.05rem", letterSpacing: "0.03em",
+              fontWeight: 700,
+              boxShadow: "0 8px 30px rgba(139, 92, 246, 0.3)",
+              border: "1px solid rgba(168, 85, 247, 0.4)",
+              transition: "all 0.2s ease"
             }}
           >
             {loading
-              ? <><div className="spinner" style={{ width: 18, height: 18 }} /> {mode === "ai" ? "Generating with AI..." : "Generating..."}</>
-              : <><Wand2 size={18} /> {mode === "ai" ? "Generate with MusicGen" : "Generate Beat"}</>
+              ? <><div className="spinner" style={{ width: 18, height: 18 }} /> Generating…</>
+              : <><Wand2 size={18} /> Generate</>
             }
           </button>
 
           {/* Result meta */}
           {result && !loading && (
             <div className="card glow-border animate-in" style={{ padding: 24 }}>
-              {/* Mode badge */}
-              <div style={{
-                display: "inline-flex", alignItems: "center", gap: 8,
-                padding: "6px 14px", marginBottom: 16,
-                background: result.mode === "ai"
-                  ? "rgba(139,92,246,0.12)" : "rgba(6,182,212,0.12)",
-                border: `1px solid ${result.mode === "ai"
-                  ? "rgba(139,92,246,0.3)" : "rgba(6,182,212,0.3)"}`,
-                borderRadius: "var(--radius-full)",
-                fontSize: "0.78rem",
-                fontWeight: 700,
-                color: result.mode === "ai" ? "#a855f7" : "#06b6d4",
-              }}>
-                {result.mode === "ai" ? <Brain size={14} /> : <Cpu size={14} />}
-                {result.mode === "ai" ? "MusicGen AI" : "Drum Synthesis"}
-              </div>
-
               {/* Stats */}
               <div style={{
                 display: "grid",
-                gridTemplateColumns: result.mode === "ai" ? "1fr 1fr" : "1fr 1fr",
+                gridTemplateColumns: "1fr 1fr",
                 gap: 12,
               }}>
-                {result.mode === "ai" ? (
-                  <>
-                    {[
-                      { label: "Duration", value: `${result.duration}s`, icon: Clock },
-                      { label: "Model", value: result.model?.split("/").pop() || "musicgen", icon: Brain },
-                      { label: "Sample Rate", value: `${(result.sample_rate / 1000).toFixed(0)}kHz`, icon: Music },
-                    ].map(({ label, value, icon: Icon }) => (
-                      <div key={label} style={{
-                        background: "var(--bg-secondary)",
-                        borderRadius: "var(--radius-md)",
-                        border: "1px solid var(--border-color)",
-                        padding: "14px 16px",
-                        position: "relative",
-                      }}>
-                        <Icon size={14} color="var(--text-dim)" style={{
-                          position: "absolute", top: 12, right: 12, opacity: 0.5,
-                        }} />
-                        <div style={{
-                          fontSize: "1.1rem", fontWeight: 800,
-                          fontFamily: "var(--font-mono)",
-                          color: "var(--text-primary)",
-                          textTransform: "capitalize",
-                        }}>{value}</div>
-                        <div style={{
-                          fontSize: "0.7rem", letterSpacing: "0.1em",
-                          textTransform: "uppercase", color: "var(--text-muted)",
-                          marginTop: 4, fontWeight: 600,
-                        }}>{label}</div>
-                      </div>
-                    ))}
-                  </>
-                ) : (
-                  <>
-                    {[
-                      { label: "BPM", value: result.bpm, icon: Music },
-                      { label: "Bars", value: result.bars, icon: Hash },
-                      { label: "Duration", value: `${result.duration?.toFixed(1)}s`, icon: Clock },
-                      { label: "Complexity", value: result.complexity, icon: Layers },
-                    ].map(({ label, value, icon: Icon }) => (
-                      <div key={label} style={{
-                        background: "var(--bg-secondary)",
-                        borderRadius: "var(--radius-md)",
-                        border: "1px solid var(--border-color)",
-                        padding: "14px 16px",
-                        position: "relative",
-                      }}>
-                        <Icon size={14} color="var(--text-dim)" style={{
-                          position: "absolute", top: 12, right: 12, opacity: 0.5,
-                        }} />
-                        <div style={{
-                          fontSize: "1.2rem", fontWeight: 800,
-                          fontFamily: "var(--font-mono)",
-                          color: "var(--text-primary)",
-                          textTransform: "capitalize",
-                        }}>{value}</div>
-                        <div style={{
-                          fontSize: "0.7rem", letterSpacing: "0.1em",
-                          textTransform: "uppercase", color: "var(--text-muted)",
-                          marginTop: 4, fontWeight: 600,
-                        }}>{label}</div>
-                      </div>
-                    ))}
-                  </>
-                )}
+                <>
+                  {[
+                    { label: "Duration",   value: `${result.duration}s`,  icon: Clock    },
+                    { label: "Steps",      value: `${result.steps}`,      icon: Gauge    },
+                    { label: "CFG Scale",  value: `${result.cfg_scale}`,  icon: Settings },
+                    { label: "Model",      value: "AI Audio",             icon: Brain    },
+                  ].map(({ label, value, icon: Icon }) => (
+                    <div key={label} style={{
+                      background: "rgba(255,255,255,0.02)",
+                      borderRadius: "var(--radius-md)",
+                      border: "1px solid rgba(255,255,255,0.05)",
+                      padding: "14px 16px",
+                      position: "relative",
+                      backdropFilter: "blur(10px)",
+                    }}>
+                      <Icon size={14} color="var(--text-dim)" style={{
+                        position: "absolute", top: 12, right: 12, opacity: 0.5,
+                      }} />
+                      <div style={{
+                        fontSize: "1.1rem", fontWeight: 800,
+                        fontFamily: "var(--font-mono)",
+                        color: "var(--text-primary)",
+                        textTransform: "capitalize",
+                      }}>{value}</div>
+                      <div style={{
+                        fontSize: "0.7rem", letterSpacing: "0.1em",
+                        textTransform: "uppercase", color: "var(--text-muted)",
+                        marginTop: 4, fontWeight: 600,
+                      }}>{label}</div>
+                    </div>
+                  ))}
+                </>
               </div>
 
               {outputUrl && (
                 <a
                   href={outputUrl}
-                  download={`automix_beat_${result.mode === "ai" ? "ai" : result.genre}.wav`}
+                  download="beat_ai_gen.wav"
                   className="btn btn-secondary"
                   style={{
                     marginTop: 16, width: "100%",
@@ -665,17 +586,18 @@ export default function BeatGeneratorPage() {
               <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <Music size={16} color="var(--accent-secondary)" />
                 <p className="section-label" style={{ marginBottom: 0 }}>Waveform</p>
-                {result.mode === "ai" && (
+                {true && (
                   <span style={{
                     padding: "3px 10px",
-                    background: "rgba(139,92,246,0.1)",
-                    border: "1px solid rgba(139,92,246,0.25)",
+                    background: "linear-gradient(135deg, rgba(139,92,246,0.15), rgba(168,85,247,0.1))",
+                    border: "1px solid rgba(139,92,246,0.3)",
                     borderRadius: "var(--radius-full)",
-                    fontSize: "0.68rem",
-                    fontWeight: 700,
-                    color: "#a855f7",
+                    fontSize: "0.65rem",
+                    letterSpacing: "0.03em",
+                    fontWeight: 800,
+                    color: "#c084fc",
                   }}>
-                    AI Generated
+                    AI Gen · 44.1 kHz
                   </span>
                 )}
               </div>
@@ -685,21 +607,6 @@ export default function BeatGeneratorPage() {
             </div>
             <BeatWaveform url={outputUrl} key={outputUrl} />
           </div>
-
-          {/* Drum pattern (synth mode only) */}
-          {result.mode === "synth" && result.pattern && (
-            <div className="card" style={{ padding: 24 }}>
-              <div style={{
-                display: "flex", alignItems: "center", gap: 10, marginBottom: 20,
-              }}>
-                <Grid3x3 size={16} color="var(--accent-secondary)" />
-                <p className="section-label" style={{ marginBottom: 0 }}>
-                  Drum Pattern — 16 Steps
-                </p>
-              </div>
-              <DrumPatternGrid pattern={result.pattern} />
-            </div>
-          )}
         </div>
       )}
 
@@ -707,36 +614,19 @@ export default function BeatGeneratorPage() {
       {!result && !loading && !error && (
         <div className="card empty-state" style={{ marginTop: 32 }}>
           <div className="empty-state-icon glow-pulse">
-            {mode === "ai"
-              ? <Brain size={32} color="var(--accent-primary)" />
-              : <Zap size={32} color="var(--accent-primary)" />
-            }
+            <Brain size={32} color="var(--accent-primary)" />
           </div>
-          <h3>Ready to Create</h3>
-          <p>
-            {mode === "ai"
-              ? "Describe any beat or music style and let MusicGen AI generate it"
-              : "Describe your beat using natural language and click Generate"
-            }
+          <h3 style={{ fontSize: "1.4rem", fontWeight: 800 }}>Ready to Create</h3>
+          <p style={{ opacity: 0.8, maxWidth: 300, margin: "0 auto" }}>
+            Describe a trap, hip-hop, or R&B beat and let our AI generate it.
           </p>
           <div style={{
-            marginTop: 16, display: "flex", gap: 8,
+            marginTop: 20, display: "flex", gap: 10,
             justifyContent: "center", flexWrap: "wrap",
           }}>
-            {mode === "ai" ? (
-              <>
-                <span className="tag tag-sm">Full beats & melodies</span>
-                <span className="tag tag-sm">Any genre</span>
-                <span className="tag tag-sm">Meta MusicGen</span>
-                <span className="tag tag-sm">Up to 30s</span>
-              </>
-            ) : (
-              <>
-                <span className="tag tag-sm">20+ genres</span>
-                <span className="tag tag-sm">3 complexity levels</span>
-                <span className="tag tag-sm">Instant synthesis</span>
-              </>
-            )}
+            <span className="tag tag-sm" style={{ background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.2)", color: "#c084fc" }}>Trap · Hip-Hop · R&B</span>
+            <span className="tag tag-sm" style={{ background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.2)", color: "#34d399" }}>Cloud · Drill · Phonk</span>
+            <span className="tag tag-sm" style={{ background: "rgba(6,182,212,0.1)", border: "1px solid rgba(6,182,212,0.2)", color: "#22d3ee" }}>44.1 kHz · Up to 47s</span>
           </div>
         </div>
       )}
