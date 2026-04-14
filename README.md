@@ -46,18 +46,13 @@
 
 AutoMixAI is a **full-stack, AI-powered music analysis and DJ mixing platform**. Upload any audio track — the system analyzes BPM, beats, genre, instruments, mood, and tags using a suite of trained neural networks. It can then automatically mix two tracks with beat-aligned, EQ-crossfaded transitions, and generate fully produced, studio-quality beats from a single natural language prompt using **StableBeaT** — a LoRA fine-tune of Stable Audio Open 1.0 trained on 40,000 trap/rap/R&B segments.
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                              AutoMixAI Platform                             │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                                                                             │
-│   Upload    →     Analyze    →     Mix     →      Generate                  │
-│  Audio Files    AI Analysis    DJ Mixing     Neural Beat Synthesis           │
-│                                                                             │
-│  WAV/MP3/     BPM, Beats,    Beat-Aligned   StableBeaT (SAO LoRA)          │
-│  FLAC/OGG     Genre, Mood,   EQ Crossfade   + Llama Prompt Enrichment      │
-│  M4A/AAC      Tags, Energy   Time-Stretch   + NLP Parser                   │
-└─────────────────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart LR
+    classDef step fill:#2563eb,stroke:#1e40af,color:#fff,stroke-width:2px,rx:10,ry:10;
+    
+    A[<b>Upload</b><br/>Audio Files<br/><i>WAV/MP3/FLAC/M4A</i>]:::step --> B[<b>Analyze</b><br/>AI Analysis<br/><i>BPM/Beats/Genre/Mood</i>]:::step
+    B --> C[<b>Mix</b><br/>DJ Mixing<br/><i>Time-Stretch & EQ Crossfade</i>]:::step
+    C --> D[<b>Generate</b><br/>Neural Beat Synthesis<br/><i>StableBeaT + Llama</i>]:::step
 ```
 
 ---
@@ -104,91 +99,60 @@ AutoMixAI's beat generator is powered by **StableBeaT** — a fine-tuned version
 
 ## System Architecture
 
-```
-┌────────────────────────────────────────────────────────────────────────────────────┐
-│                                   CLIENT LAYER                                      │
-│  ┌──────────────────────────────────────────────────────────────────────────────┐  │
-│  │                        React Frontend (Vite + ES6)                            │  │
-│  │                                                                              │  │
-│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌──────────────────┐   │  │
-│  │  │ Upload Page │  │Analyze Page │  │  Mix Page   │  │Beat Generator    │   │  │
-│  │  │             │  │             │  │             │  │Page              │   │  │
-│  │  │ Drag & Drop │  │ Waveform    │  │ Two-track   │  │ Prompt input     │   │  │
-│  │  │ File select │  │ BPM/Genre   │  │ Upload      │  │ BPM/Bars/Genre   │   │  │
-│  │  │ Format check│  │ Tags/Mood   │  │ Crossfade   │  │ Generation opts  │   │  │
-│  │  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘  └────────┬─────────┘   │  │
-│  │         └────────────────┴────────────────┴──────────────────┘             │  │
-│  │                                   │                                         │  │
-│  │                   WaveSurfer.js waveform rendering                          │  │
-│  │                   API Client (fetch / REST)                                  │  │
-│  └───────────────────────────────────┼─────────────────────────────────────────┘  │
-└──────────────────────────────────────┼──────────────────────────────────────────────┘
-                                       │ HTTP/REST (JSON + multipart/form-data)
-                                       ▼
-┌──────────────────────────────────────────────────────────────────────────────────────┐
-│                                   API LAYER                                          │
-│  ┌────────────────────────────────────────────────────────────────────────────────┐  │
-│  │                         FastAPI Backend (Uvicorn)                               │  │
-│  │                                                                                │  │
-│  │  CORS Middleware → Routes → Services → Response                                │  │
-│  │                                                                                │  │
-│  │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────────────┐   │  │
-│  │  │  POST    │ │  POST    │ │  POST    │ │  POST    │ │  GET             │   │  │
-│  │  │ /upload  │ │ /analyze │ │  /mix    │ │/generate │ │ /output/{id}     │   │  │
-│  │  │          │ │          │ │          │ │          │ │                  │   │  │
-│  │  │Multipart │ │file_id → │ │ file_id  │ │prompt →  │ │ WAV download     │   │  │
-│  │  │→ file_id │ │analysis  │ │ A+B → mix│ │ beat WAV │ │                  │   │  │
-│  │  └──────────┘ └──────────┘ └──────────┘ └──────────┘ └──────────────────┘   │  │
-│  │                                                                                │  │
-│  │  Pydantic Schemas: UploadResponse • AnalysisResponse • MixRequest             │  │
-│  │                    MixResponse • GenerateBeatRequest • GenerateBeatResponse    │  │
-│  └────────────────────────────────────────────────────────────────────────────────┘  │
-└──────────────────────────────────────┬───────────────────────────────────────────────┘
-                                       │
-                                       ▼
-┌──────────────────────────────────────────────────────────────────────────────────────┐
-│                                 SERVICE LAYER                                        │
-│  ┌────────────────────────────────────────────────────────────────────────────────┐  │
-│  │                           Audio Processing Services                             │  │
-│  │                                                                                 │  │
-│  │   ┌─────────────────┐   ┌─────────────────┐   ┌─────────────────┐              │  │
-│  │   │  audio_loader   │   │ beat_detector   │   │ bpm_estimator   │              │  │
-│  │   │  librosa load   │   │  ANN inference  │   │  onset strength │              │  │
-│  │   │  22050 Hz mono  │   │  43-dim input   │   │  median IBI     │              │  │
-│  │   └─────────────────┘   └─────────────────┘   └─────────────────┘              │  │
-│  │                                                                                 │  │
-│  │   ┌─────────────────┐   ┌─────────────────┐   ┌─────────────────┐              │  │
-│  │   │genre_classifier │   │instrument_class │   │  tag_predictor  │              │  │
-│  │   │  GTZAN 10-class │   │  NSynth 11-fam  │   │  MagnaTagATune  │              │  │
-│  │   │  57-dim feats   │   │  43-dim feats   │   │  56 multi-label │              │  │
-│  │   └─────────────────┘   └─────────────────┘   └─────────────────┘              │  │
-│  │                                                                                 │  │
-│  │   ┌─────────────────┐   ┌─────────────────┐   ┌─────────────────┐              │  │
-│  │   │ drum_classifier │   │ beat_generator  │   │     mixer       │              │  │
-│  │   │  Kick/Snare/HH  │   │ StableBeaT SAO  │   │  LUFS + EQ +    │              │  │
-│  │   │  43-dim feats   │   │  LoRA fine-tune │   │  Crossfade      │              │  │
-│  │   └─────────────────┘   └─────────────────┘   └─────────────────┘              │  │
-│  │                                                                                 │  │
-│  └────────────────────────────────────────────────────────────────────────────────┘  │
-└──────────────────────────────────────┬───────────────────────────────────────────────┘
-                                       │
-                                       ▼
-┌──────────────────────────────────────────────────────────────────────────────────────┐
-│                                   ML LAYER                                           │
-│  ┌────────────────────────────────────────────────────────────────────────────────┐  │
-│  │                          Neural Network Models                                  │  │
-│  │                                                                                 │  │
-│  │   beat_detector.h5     │  Dense ANN (128→64→1, sigmoid)  — beat activation     │  │
-│  │   genre_classifier.h5  │  Dense (256→128→10, softmax)    — GTZAN genres        │  │
-│  │   nsynth_classifier.h5 │  Dense (128→64→11, softmax)     — instrument families │  │
-│  │   tag_predictor.h5     │  Dense (256→128→56, sigmoid)    — multi-label tags    │  │
-│  │   drum_classifier.h5   │  Dense (64→32→4,  softmax)      — kick/snare/hh/tom   │  │
-│  │   stable_beat/ (LoRA)  │  SAO 1.0 + LoRA — 40k segments, 14 epochs, A100      │  │
-│  │                                                                                 │  │
-│  │   Scalers: feature_scaler.pkl • genre_scaler.pkl • nsynth_scaler.pkl           │  │
-│  │            tag_scaler.pkl • drum_scaler.pkl                                    │  │
-│  └────────────────────────────────────────────────────────────────────────────────┘  │
-└──────────────────────────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TD
+    classDef client fill:#3b82f6,stroke:#1d4ed8,stroke-width:2px,color:#fff;
+    classDef api outline:#10b981,fill:#059669,stroke:#047857,stroke-width:2px,color:#fff;
+    classDef service fill:#8b5cf6,stroke:#6d28d9,stroke-width:2px,color:#fff;
+    classDef ml fill:#f59e0b,stroke:#d97706,stroke-width:2px,color:#fff;
+
+    subgraph ClientLayer [Client Layer - React/Vite]
+        direction LR
+        Upload[Upload Page]
+        Analyze[Analyze Page]
+        Mix[Mix Page]
+        Beat[Beat Generator]
+    end
+
+    subgraph APILayer [API Layer - FastAPI]
+        direction LR
+        pUpload[POST /upload]
+        pAnalyze[POST /analyze]
+        pMix[POST /mix]
+        pGen[POST /generate]
+        pOut[GET /output/id]
+    end
+
+    subgraph ServiceLayer [Audio Processing Services]
+        direction LR
+        sAudio[audio_loader]
+        sBeatD[beat_detector]
+        sBPM[bpm_estimator]
+        sGenre[genre_classifier]
+        sInst[instrument_class]
+        sTag[tag_predictor]
+        sDrum[drum_classifier]
+        sBeatG[beat_generator]
+        sMixer[mixer]
+    end
+
+    subgraph MLLayer [Machine Learning Models]
+        mBeat[beat_detector.h5]
+        mGenre[genre_classifier.h5]
+        mNsynth[nsynth_classifier.h5]
+        mTag[tag_predictor.h5]
+        mDrum[drum_classifier.h5]
+        mStable[stable_beat LoRA]
+    end
+
+    ClientLayer -- "HTTP/REST" --> APILayer
+    APILayer --> ServiceLayer
+    ServiceLayer --> MLLayer
+
+    class ClientLayer client;
+    class APILayer api;
+    class ServiceLayer service;
+    class MLLayer ml;
 ```
 
 ---
@@ -310,109 +274,44 @@ has_vocals = (vocal_ratio > 0.8) AND (hp_ratio > 1.2)
 
 The mixing engine executes a professional 9-step pipeline that mimics real DJ technique:
 
-```
-     Track A                                              Track B
-  (e.g. 128 BPM)                                      (e.g. 125 BPM)
-        │                                                    │
-        ▼                                                    ▼
-┌───────────────────┐                            ┌───────────────────┐
-│  Load @ 44.1 kHz  │                            │  Load @ 44.1 kHz  │
-│  (SR_MIX = 44100) │                            │  (SR_MIX = 44100) │
-└─────────┬─────────┘                            └─────────┬─────────┘
-          │                                                │
-          ▼                                                ▼
-┌───────────────────┐                            ┌───────────────────┐
-│  LUFS Normalize   │                            │  LUFS Normalize   │
-│  to −24 LUFS      │                            │  to −24 LUFS      │
-│  (EBU R128)       │                            │  (EBU R128)       │
-└─────────┬─────────┘                            └─────────┬─────────┘
-          │                                                │
-          ▼                                                ▼
-┌───────────────────┐                            ┌───────────────────┐
-│  High-Pass Filter │                            │  High-Pass Filter │
-│  cutoff = 40 Hz   │                            │  cutoff = 40 Hz   │
-│  (sub-bass rumble │                            │   removal)        │
-└─────────┬─────────┘                            └─────────┬─────────┘
-          │                                                │
-          ▼                                                ▼
-┌───────────────────┐                            ┌───────────────────┐
-│  Beat Detection   │                            │  Beat Detection   │
-│  BPM: 128.0       │                            │  BPM: 125.0       │
-│  (resampled to    │                            │  (resampled to    │
-│   22050 Hz fast)  │                            │   22050 Hz fast)  │
-└─────────┬─────────┘                            └─────────┬─────────┘
-          │                                                │
-          │          ┌───────────────────────┐             │
-          └──────────▶    Target BPM Calc    ◀─────────────┘
-                     │   (128 + 125) / 2     │
-                     │   = 126.5 BPM         │
-                     └──────────┬────────────┘
-                                │
-          ┌─────────────────────┴─────────────────────┐
-          ▼                                           ▼
-┌───────────────────┐                       ┌───────────────────┐
-│  Time-Stretch A   │                       │  Time-Stretch B   │
-│  128 → 126.5 BPM  │                       │  125 → 126.5 BPM  │
-│  rate = 126.5/128 │                       │  rate = 126.5/125 │
-│  librosa effects  │                       │  librosa effects  │
-│  (pitch preserved)│                       │  (pitch preserved)│
-└─────────┬─────────┘                       └─────────┬─────────┘
-          │                                           │
-          ▼                                           ▼
-┌───────────────────┐                       ┌───────────────────┐
-│  Re-detect Beats  │                       │  Re-detect Beats  │
-│  (post-stretch)   │                       │  (post-stretch)   │
-└─────────┬─────────┘                       └─────────┬─────────┘
-          │                                           │
-          │         ┌─────────────────────┐           │
-          └─────────▶   Beat Alignment    ◀───────────┘
-                    │  Trim to beat[0]    │
-                    │  (first downbeat)   │
-                    └──────────┬──────────┘
-                               │
-                    ┌──────────┴──────────┐
-                    ▼                     ▼
-           ┌────────────────┐    ┌────────────────┐
-           │ Per-Track EQ A │    │ Per-Track EQ B │
-           │                │    │                │
-           │ Bass Boost     │    │ Bass Boost     │
-           │ (<150 Hz)      │    │ (<150 Hz)      │
-           │ Brightness     │    │ Brightness     │
-           │ (>4 kHz)       │    │ (>4 kHz)       │
-           │ Vocal Boost    │    │ Vocal Boost    │
-           │ (1–4 kHz band) │    │ (1–4 kHz band) │
-           └───────┬────────┘    └───────┬────────┘
-                   │                     │
-                   └──────────┬──────────┘
-                              │
-                              ▼
-                   ┌─────────────────────┐
-                   │  EQ Crossfade       │  ◄─── DJ-style (default)
-                   │  ─────────────────  │
-                   │  Split each track:  │
-                   │  ┌───────────────┐  │
-                   │  │ Bass (<200Hz) │  │  cos³ / sin³ fade (sharp)
-                   │  │ Mid+Hi(>200Hz)│  │  cos² / sin² fade (smooth)
-                   │  └───────────────┘  │
-                   │                     │
-                   │  Duration: 8.0s     │
-                   └──────────┬──────────┘
-                              │
-                              ▼
-                   ┌─────────────────────┐
-                   │  Final LUFS Master  │
-                   │  Target: −14 LUFS   │
-                   │  (streaming std.)   │
-                   │  + Soft limiter     │
-                   │  (clip at 0.99)     │
-                   └──────────┬──────────┘
-                              │
-                              ▼
-                   ┌─────────────────────┐
-                   │   Output WAV        │
-                   │   44.1 kHz, 16-bit  │
-                   │   Mixed Track       │
-                   └─────────────────────┘
+```mermaid
+flowchart TD
+    classDef track fill:#ef4444,stroke:#b91c1c,color:#fff;
+    classDef proc fill:#3b82f6,stroke:#1d4ed8,color:#fff;
+    classDef mix fill:#10b981,stroke:#047857,color:#fff;
+
+    A[Track A 128 BPM]:::track --> L1[Load @ 44.1 kHz]:::proc
+    B[Track B 125 BPM]:::track --> L2[Load @ 44.1 kHz]:::proc
+
+    L1 --> N1[LUFS Normalize -24]:::proc
+    L2 --> N2[LUFS Normalize -24]:::proc
+
+    N1 --> F1[High-Pass Filter 40 Hz]:::proc
+    N2 --> F2[High-Pass Filter 40 Hz]:::proc
+
+    F1 --> BD1[Beat Detection 128.0]:::proc
+    F2 --> BD2[Beat Detection 125.0]:::proc
+
+    BD1 & BD2 --> TGT[Target BPM Calc 126.5]:::proc
+
+    TGT --> TS1[Time-Stretch A 128->126.5]:::proc
+    TGT --> TS2[Time-Stretch B 125->126.5]:::proc
+
+    BD1 --> TS1
+    BD2 --> TS2
+
+    TS1 --> RD1[Re-detect Beats]:::proc
+    TS2 --> RD2[Re-detect Beats]:::proc
+
+    RD1 & RD2 --> ALIGN[Beat Alignment Trim]:::proc
+
+    ALIGN --> EQ1[Per-Track EQ A]:::proc
+    ALIGN --> EQ2[Per-Track EQ B]:::proc
+
+    EQ1 & EQ2 --> XFADE[EQ Crossfade<br/>Bass & Mid/Hi split]:::mix
+    
+    XFADE --> LIMIT[Final LUFS Master -14<br/>+ Soft Limiter]:::mix
+    LIMIT --> OUT[Output WAV Mixed Track]:::mix
 ```
 
 ### EQ Crossfade — Technical Detail
@@ -451,88 +350,18 @@ StableBeaT is the most technically sophisticated part of AutoMixAI. It goes far 
 
 ### Full Generation Pipeline
 
-```
-                    ┌────────────────────────────────────┐
-                    │           User Prompt              │
-                    │                                    │
-                    │  "120 BPM trap beat, dark mood,   │
-                    │   4 bars, heavy 808 bass"         │
-                    └───────────────┬────────────────────┘
-                                    │
-                                    ▼
-                    ┌────────────────────────────────────┐
-                    │           NLP Parser               │
-                    │                                    │
-                    │  Regex + keyword matching          │
-                    │                                    │
-                    │  ┌──────────────────────────────┐  │
-                    │  │ BPM:        120              │  │
-                    │  │             (regex \d+ bpm)  │  │
-                    │  │ Genre:      trap             │  │
-                    │  │             (keyword match)  │  │
-                    │  │ Mood:       dark             │  │
-                    │  │             (mood keywords)  │  │
-                    │  │ Bars:       4                │  │
-                    │  │             (regex \d+ bar)  │  │
-                    │  │ Complexity: medium (default) │  │
-                    │  │ Energy:     high             │  │
-                    │  │             ("heavy" → HIGH) │  │
-                    │  └──────────────────────────────┘  │
-                    └───────────────┬────────────────────┘
-                                    │
-                                    ▼
-                    ┌────────────────────────────────────┐
-                    │   Llama 3.1 3B Prompt Enrichment   │
-                    │       (local inference)            │
-                    │                                    │
-                    │  Input structured params:          │
-                    │  {genre, bpm, mood, key,           │
-                    │   instruments, energy, bars}       │
-                    │                                    │
-                    │  Expands into rich, human-readable │
-                    │  audio prompt with synonym variety │
-                    │  and subgenre nuance               │
-                    │                                    │
-                    │  Output:                           │
-                    │  "A dark trap beat at 120 BPM in  │
-                    │  C minor, featuring heavy 808 bass │
-                    │  and synth bells with a brooding,  │
-                    │  melancholic atmosphere..."        │
-                    └───────────────┬────────────────────┘
-                                    │
-                                    ▼
-                    ┌────────────────────────────────────┐
-                    │     StableBeaT Inference           │
-                    │   (Stable Audio Open 1.0 + LoRA)   │
-                    │                                    │
-                    │  Architecture:                     │
-                    │  ┌──────────────────────────────┐  │
-                    │  │ Text Encoder (T5)             │  │
-                    │  │ Conditioned on enriched prompt│  │
-                    │  ├──────────────────────────────┤  │
-                    │  │ Diffusion UNet               │  │
-                    │  │ 200 DDIM steps               │  │
-                    │  │ CFG scale = 7               │  │
-                    │  ├──────────────────────────────┤  │
-                    │  │ LoRA Adapters (fine-tuned)   │  │
-                    │  │ 40k trap/rap/R&B segments    │  │
-                    │  │ ~277h audio, 14 epochs       │  │
-                    │  │ Trained on A100 (~42h)       │  │
-                    │  ├──────────────────────────────┤  │
-                    │  │ Audio Decoder (VAE)          │  │
-                    │  │ Latent → waveform            │  │
-                    │  └──────────────────────────────┘  │
-                    │                                    │
-                    │  Output: up to 47s of full audio   │
-                    └───────────────┬────────────────────┘
-                                    │
-                                    ▼
-                    ┌────────────────────────────────────┐
-                    │       Output WAV                   │
-                    │       44.1kHz, 16-bit PCM          │
-                    │       Full generative beat audio   │
-                    │       Production-ready             │
-                    └────────────────────────────────────┘
+```mermaid
+flowchart TD
+    classDef input fill:#3b82f6,stroke:#1d4ed8,color:#fff;
+    classDef parse fill:#8b5cf6,stroke:#6d28d9,color:#fff;
+    classDef llm fill:#f43f5e,stroke:#e11d48,color:#fff;
+    classDef model fill:#10b981,stroke:#047857,color:#fff;
+    classDef out fill:#f59e0b,stroke:#d97706,color:#fff;
+
+    A[User Prompt<br/>'120 BPM trap beat, dark mood...']:::input --> B[NLP Parser<br/>Regex + Keyword match]:::parse
+    B -->|Structured params| C[Llama 3.1 3B<br/>Prompt Enrichment]:::llm
+    C -->|Rich audio prompt| D[StableBeaT Inference<br/>SAO 1.0 + LoRA]:::model
+    D -->|Audio Decoder VAE| E[Output WAV<br/>44.1kHz, 16-bit PCM]:::out
 ```
 
 ### StableBeaT Training Details
@@ -557,74 +386,21 @@ StableBeaT is the most technically sophisticated part of AutoMixAI. It goes far 
 
 Each training segment is richly tagged before prompts are generated:
 
-```
-   Raw Instrumental Track (MP3/WAV)
-           │
-           ▼
-   ┌──────────────────────────────────────────┐
-   │  Segmentation                            │
-   │  2 × 20–35s segments per track          │
-   │  → 40,000 total segments                 │
-   └──────────────────┬───────────────────────┘
-                      │
-           ┌──────────┴──────────────────┐
-           ▼                             ▼
-   ┌──────────────────┐       ┌──────────────────────┐
-   │  CLAP LAION      │       │  Essentia deeptemp   │
-   │  Audio Tagging   │       │  BPM + Key/Scale     │
-   │                  │       │                      │
-   │  instruments_tags│       │  tempo: 109.0 BPM    │
-   │  genres_tags     │       │  key: "G"            │
-   │  moods_tags      │       │  scale: "minor"      │
-   │  (confidence >0.7│       │  confidence > 70%    │
-   └─────────┬────────┘       └──────────┬───────────┘
-             │                           │
-             └─────────────┬─────────────┘
-                           │
-                           ▼
-              ┌────────────────────────┐
-              │  Metadata JSON         │
-              │                        │
-              │  {                     │
-              │   "instruments_tags":  │
-              │    ["plucked guitar",  │
-              │     "synth bells",     │
-              │     "movie sample"],   │
-              │   "genres_tags":       │
-              │    ["rap with soul"],  │
-              │   "moods_tags":        │
-              │    ["trap melancholic",│
-              │     "love"],           │
-              │   "key": "G",          │
-              │   "scale": "minor",    │
-              │   "tempo": 109.0,      │
-              │   "start": 63,         │
-              │   "duration": 26       │
-              │  }                     │
-              └────────────┬───────────┘
-                           │
-                           ▼
-              ┌────────────────────────┐
-              │  Llama 3.1 3B         │
-              │  Prompt Generation    │
-              │  (local inference)    │
-              │                       │
-              │  Output:              │
-              │  "A melancholic and   │
-              │  love-inspired rap    │
-              │  with soul beat at    │
-              │  109 BPM in G minor,  │
-              │  using plucked guitar,│
-              │  synth bells, and     │
-              │  movie sample."       │
-              └────────────┬───────────┘
-                           │
-                           ▼
-              ┌────────────────────────┐
-              │  Final Training JSONL  │
-              │  {filepath, start,     │
-              │   duration, prompt}    │
-              └────────────────────────┘
+```mermaid
+flowchart TD
+    classDef raw fill:#64748b,stroke:#475569,color:#fff;
+    classDef proc fill:#3b82f6,stroke:#1d4ed8,color:#fff;
+    classDef meta fill:#8b5cf6,stroke:#6d28d9,color:#fff;
+    classDef llm fill:#f43f5e,stroke:#e11d48,color:#fff;
+    classDef out fill:#10b981,stroke:#047857,color:#fff;
+
+    A[Raw Instrumental Track MP3/WAV]:::raw --> B[Segmentation<br/>2x 20-35s segments]:::proc
+    B --> C[CLAP LAION Audio Tagging<br/>instruments, genres, moods]:::proc
+    B --> D[Essentia deeptemp<br/>BPM + Key/Scale]:::proc
+    
+    C & D --> E[Metadata JSON]:::meta
+    E --> F[Llama 3.1 3B<br/>Prompt Generation]:::llm
+    F --> G[Final Training JSONL]:::out
 ```
 
 ### Tag Embedding Clusters (T5-Base)
